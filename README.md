@@ -17,12 +17,7 @@ $ conda activate psf
 
 * Install directly from github repository
 ```
-(psf) $ pip install git+git://github.com/______/PSF-extractor.git
-```
-
-* Install additional optional packages
-```
-(psf) $ pip install tqdm
+(psf) $ pip install git+git://github.com/hoogenboom-group/PSF-Extractor.git
 ```
 
 
