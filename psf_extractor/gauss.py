@@ -3,9 +3,15 @@ from scipy.optimize import curve_fit
 
 
 __all__ = [
-    'super_gaussian',
+    'gaussian_1D',
     'gaussian_2D',
+    'super_gaussian',
 ]
+
+
+def gaussian_1D(x, x0, xA, A, B):
+    """1D Gaussian function"""
+    return A * np.exp( -((x-x0)**2 / (2*xA**2))) + B
 
 
 def super_gaussian(x, x0, sigma, A, P, B):
@@ -33,8 +39,12 @@ def super_gaussian(x, x0, sigma, A, P, B):
     ----------
     [1] https://en.wikipedia.org/wiki/Gaussian_function#Higher-order_Gaussian_or_super-Gaussian_function
     """
-    E = (x - x0)**2 / (2*sigma**2)
-    return A * np.exp(-E**P) + B
+    E = -(2**(2*P - 1)) * np.log(2) * ((x - x0)**2 / sigma**2)
+    return A * np.exp(E**P)**2 + B
+
+    # From wikipedia
+    # E = (x - x0)**2 / (2*sigma**2)
+    # return A * np.exp(-E**P) + B
 
 
 # def super_gaussian_Daan(x, x0, sigma, amp, back, rank):
@@ -50,6 +60,9 @@ def gaussian_2D(x, y, x0, y0, xA, yA, theta, A, B):
     b = -np.sin(2*theta) / (4*xA**2) + np.sin(2*theta) / (4*yA**2)
     c = np.sin(theta)**2 / (2*xA**2) + np.cos(theta)**2 / (2*yA**2)
     return A * np.exp( -(a*(x-x0)**2 + 2*b*(x-x0)*(y-y0) + c*(y-y0)**2)) + B
+
+
+
 
 
 
@@ -73,9 +86,7 @@ def do_2D_gauss_fit(arr, thetaest=45):
     xdata = np.vstack((X.ravel(), Y.ravel()))
     popt, pcov = curve_fit(_gaussian_2D, xdata, arr.ravel(), p0, maxfev = 8000)
     return popt #give back all fit values
-    
-def gaussian_1D(x, x0, xalpha, A, B): 
-    return A * np.exp( -((x-x0)**2 / (2*xalpha**2))) + B
+
 
 def gauss2D_param(im): #estimate first guesses for parameters
     imy, imx = im.shape
