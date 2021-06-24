@@ -2,7 +2,8 @@
 This crazy thing Daan and Ernest wrote
 
 Created by Daan Boltje, Ernest van der Wee  
-Made presentable by Ryan Lane
+Made presentable by Ryan Lane  
+Input from Yoram Vos
 
 ### Installation
 * Create a new conda environment (assumes Anaconda or Miniconda is already installed)
