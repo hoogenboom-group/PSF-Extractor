@@ -5,7 +5,7 @@ __all__ = ['get_Daans_special_cmap']
 
 
 def get_Daans_special_cmap():
-    """Custom colormap to ease Daan's colorblindness"""
+    """Equivalent to FIRE LUT in ImageJ/FIJI"""
     # Black --> purplish --> red --> orange --> yellow --> white
     colors = [
         [0.        , 0.        , 0.        , 1.        ],
