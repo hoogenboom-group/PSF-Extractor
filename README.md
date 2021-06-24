@@ -1,7 +1,7 @@
 # PSF-Extractor
 This crazy thing Daan and Ernest wrote
 
-Created by Daan Boltje, Ernest van der Wee, and Yoram Vos
+Created by Daan Boltje, Ernest van der Wee, and Yoram Vos  
 Made presentable by Ryan Lane
 
 ### Installation
