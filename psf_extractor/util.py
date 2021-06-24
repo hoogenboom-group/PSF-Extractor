@@ -6,8 +6,8 @@ __all__ = ['get_Daans_special_cmap']
 
 def get_Daans_special_cmap():
     """Custom colormap to ease Daan's colorblindness"""
-    # Black --> purplish --> red --> orange --> yellow
-    fire_colors = [
+    # Black --> purplish --> red --> orange --> yellow --> white
+    colors = [
         [0.        , 0.        , 0.        , 1.        ],
         [0.        , 0.        , 0.02745098, 1.        ],
         [0.        , 0.        , 0.05882353, 1.        ],
@@ -266,5 +266,5 @@ def get_Daans_special_cmap():
         [1.        , 1.        , 1.        , 1.        ]
     ]
 
-    fire_cmap = ListedColormap(fire_colors)
-    return fire_cmap
+    cmap = ListedColormap(colors, name='fire')
+    return cmap
