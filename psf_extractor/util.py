@@ -1,12 +1,12 @@
 from matplotlib.colors import ListedColormap
 
 
-__all__ = ['get_cmap']
+__all__ = ['get_Daans_special_cmap']
 
 
-def get_cmap():
+def get_Daans_special_cmap():
     """Custom colormap to ease Daan's colorblindness"""
-    # Black --> purplish --> red --> orange --> yellow --> white
+    # Black --> purplish --> red --> orange --> yellow
     fire_colors = [
         [0.        , 0.        , 0.        , 1.        ],
         [0.        , 0.        , 0.02745098, 1.        ],
