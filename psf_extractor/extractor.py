@@ -86,4 +86,6 @@ def get_stack(file_pattern):
                         "filename of an image stack as either a <list> or <str>, "
                         f"not {type(file_pattern)}.")
 
+    # Return stack
+    logging.info(f"{stack.shape} image stack created succesfully.")
     return stack
