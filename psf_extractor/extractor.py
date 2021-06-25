@@ -6,6 +6,9 @@ from skimage import img_as_float
 from skimage import io
 
 
+__all__ = ['get_stack']
+
+
 def get_stack(file_pattern):
     """Loads image stack
 
