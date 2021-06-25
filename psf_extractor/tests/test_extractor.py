@@ -33,3 +33,28 @@ class TestStack:
         stack = get_stack(file_pattern)
         # Known shape
         assert stack.shape == (6, 2048, 2448)
+
+    def test_directory_png(self):
+        # Path to png stack directory
+        file_pattern = './data/sample_zstack_png_sequence/'
+        # Create stack
+        stack = get_stack(file_pattern)
+        # Known shape
+        assert stack.shape == (32, 2048, 2448)
+
+    def test_directory_tif(self):
+        # Path to png stack directory
+        file_pattern = './data/sample_zstack_tif_sequence/'
+        # Create stack
+        stack = get_stack(file_pattern)
+        # Known shape
+        assert stack.shape == (32, 2048, 2448)
+
+    def test_tif_stack(self):
+        # Path to tif stack in data module
+        file_pattern = './data/sample_zstack_single_tif/20201130_162150_collar' +\
+                       '_0.146_yaw_1.62deg_cyls_corr_back_foc_325.3um_15deg.tif'
+        # Create stack
+        stack = get_stack(file_pattern)
+        # Known shape
+        assert stack.shape == (23, 1749, 2034)

@@ -66,7 +66,7 @@ def get_stack(file_pattern):
             # Create 3D image stack (Length, Height, Width)
             stack = np.stack(images, axis=0)
 
-        # Tiff stack
+        # Tiff stack or gif
         elif (Path(file_pattern).suffix == '.tif') or \
              (Path(file_pattern).suffix == '.tiff') or \
              (Path(file_pattern).suffix == '.gif'):
