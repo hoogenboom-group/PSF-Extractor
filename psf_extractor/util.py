@@ -265,6 +265,6 @@ def get_Daans_special_cmap():
         [1.        , 1.        , 1.        , 1.        ],
         [1.        , 1.        , 1.        , 1.        ]
     ]
-
-    cmap = ListedColormap(colors, name='fire')
+    # Create colormap
+    cmap = ListedColormap(colors, name='fire').set_bad('#000000')
     return cmap
