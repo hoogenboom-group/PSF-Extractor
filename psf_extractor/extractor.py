@@ -119,3 +119,54 @@ def bboxes_overlap(bbox_1, bbox_2):
     overlap = ((bbox_1[2] >= bbox_2[0]) & (bbox_1[0] <= bbox_2[2])) & \
               ((bbox_1[3] >= bbox_2[1]) & (bbox_1[1] <= bbox_2[3]))
     return overlap
+
+
+def create_substacks(stack, features, volume):
+    """Create a subvolume for each detected feature
+
+    Parameters
+    ----------
+    stack : array-like
+        Image stack of shape (3, M, N)
+    features : `pd.DataFrame`
+        DataFrame of located features
+    volume : array-like or 3-tuple
+        Volume of the substacks to be created (wz, wy, wx)
+
+    Returns
+    -------
+    substacks : list
+        List of all the subvolumes as numpy arrays
+    """
+
+    # Extract volume
+    wz, wy, wx = volume
+
+    # Collect substacks
+    substacks = []
+    for i, row in features.iterrows():
+
+        x, y = row[['x', 'y']]
+
+        if stack.shape[0] < wz:
+            z1, z2 = 0, stack.shape[0]
+        else:
+            z1, z2 = (int(stack.shape[0]/2 - wz/2),
+                      int(stack.shape[0]/2 + wz/2))
+
+        if stack.shape[1] < wy:
+            y1, y2 = 0, stack.shape[1]
+        else:
+            y1, y2 = (int(stack.shape[1]/2 - wy/2),
+                      int(stack.shape[1]/2 + wy/2))
+
+        if stack.shape[2] < wx:
+            x1, x2 = 0, stack.shape[2]
+        else:
+            x1, x2 = (int(stack.shape[2]/2 - wx/2),
+                      int(stack.shape[2]/2 + wx/2))
+
+        # Create substacks
+        substack = stack[z1:z2, y1:y2, x1:x2]
+        substacks.append(substack)
+        return substacks
