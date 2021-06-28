@@ -123,7 +123,7 @@ def bboxes_overlap(bbox_1, bbox_2):
 
 
 def create_substacks(stack, features, volume):
-    """Create a subvolume for each detected feature
+    """Create a subvolume for each detected feature while filtering out edge features
 
     Parameters
     ----------
@@ -138,13 +138,21 @@ def create_substacks(stack, features, volume):
     -------
     substacks : list
         List of all the subvolumes as numpy arrays
+    features : `pd.DataFrame`
+        DataFrame of features with edge features removed
+        
+    Notes
+    -----
+    * Feature is considered to be an edge feature if the subvolume of the feature extends
+      outside the image stack in x or y
     """
 
     # Extract volume
     wz, wy, wx = volume
 
-    # Collect substacks
-    substacks = []
+    # Iterate through features
+    substacks = []  # collect substacks
+    edge_features = []  # collect indices of edge feature
     for i, row in features.iterrows():
 
         # Set z indices
@@ -177,8 +185,15 @@ def create_substacks(stack, features, volume):
             x1, x2 = (int(x - wx/2),
                       int(x + wx/2))
 
+        # Determine if feature is along the edge of the image stack
+        if (x1 < 0) or (y1 < 0) or (x2 > stack.shape[2]) or (y2 > stack.shape[1]):
+            edge_features.append(i)
         # Create substacks
-        substack = stack[z1:z2, y1:y2, x1:x2]
-        substacks.append(substack)
-    return substacks
+        else:
+            substack = stack[z1:z2, y1:y2, x1:x2]
+            substacks.append(substack)
 
+    # Filter out edge features
+    features = features.drop(edge_features).reset_index(drop=True)
+
+    return substacks, features
