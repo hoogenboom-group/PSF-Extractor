@@ -7,7 +7,8 @@ from skimage import io
 
 
 __all__ = ['get_stack',
-           'bboxes_overlap']
+           'bboxes_overlap',
+           'create_substacks']
 
 
 def get_stack(file_pattern):
