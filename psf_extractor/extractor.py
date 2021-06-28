@@ -97,12 +97,12 @@ def bboxes_overlap(bbox_1, bbox_2):
 
     Parameters
     ----------
-    bbox_1 : 4-tuple
+    bbox_1 : array-like (or 4-tuple)
         1st bounding box
-        convention: (x_min, x_max, y_min, y_max)
-    bbox_2 : 4-tuple
+        convention: (x_min, y_min, x_max, y_max)
+    bbox_2 : array-like (or 4-tuple)
         2nd bounding box
-        convention: (x_min, x_max, y_min, y_max)
+        convention: (x_min, y_min, x_max, y_max)
 
     Returns
     -------
