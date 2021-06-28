@@ -147,27 +147,38 @@ def create_substacks(stack, features, volume):
     substacks = []
     for i, row in features.iterrows():
 
-        x, y = row[['x', 'y']]
-
-        if stack.shape[0] < wz:
+        # Set z indices
+        if stack.shape[0] < wz:  # image stack height < wz
+            # Take full image stack in z
             z1, z2 = 0, stack.shape[0]
         else:
+            # Place the subvolume at halfway in z
             z1, z2 = (int(stack.shape[0]/2 - wz/2),
                       int(stack.shape[0]/2 + wz/2))
 
-        if stack.shape[1] < wy:
+        # Get x, y position of feature
+        x, y = row[['x', 'y']]
+
+        # Set y indices
+        if stack.shape[1] < wy:  # image stack y width < wy
+            # Take full image stack in y
             y1, y2 = 0, stack.shape[1]
         else:
-            y1, y2 = (int(stack.shape[1]/2 - wy/2),
-                      int(stack.shape[1]/2 + wy/2))
+            # Center the subvolume in y
+            y1, y2 = (int(y - wy/2),
+                      int(y + wy/2))
 
-        if stack.shape[2] < wx:
+        # Set x indices
+        if stack.shape[2] < wx:  # image stack x width < wx
+            # Take full image stack x
             x1, x2 = 0, stack.shape[2]
         else:
-            x1, x2 = (int(stack.shape[2]/2 - wx/2),
-                      int(stack.shape[2]/2 + wx/2))
+            # Center the subvolume in x
+            x1, x2 = (int(x - wx/2),
+                      int(x + wx/2))
 
         # Create substacks
         substack = stack[z1:z2, y1:y2, x1:x2]
         substacks.append(substack)
     return substacks
+
