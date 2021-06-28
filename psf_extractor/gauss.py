@@ -5,7 +5,9 @@ from scipy.optimize import curve_fit
 __all__ = [
     'gaussian_1D',
     'gaussian_2D',
-    'super_gaussian',
+    'elliptical_gaussian_2D',
+    'super_gaussian_1D',
+    'super_elliptical_gaussian_2D'
 ]
 
 
