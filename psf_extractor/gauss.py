@@ -8,8 +8,8 @@ __all__ = [
     'elliptical_gaussian_2D',
     'super_gaussian_1D',
     'super_elliptical_gaussian_2D',
-    '',
-    ''
+    'fit_gaussian_2D',
+    'guess_gaussian_2D_params'
 ]
 
 
@@ -80,7 +80,9 @@ def fit_gaussian_2D(image, p0=None):
     image_1D = image.ravel()
 
     # Trick `curve_fit` into fitting 2D data
-    popt, pcov = curve_fit(_gaussian_2D, X, image_1D, p0=p0)
+    if p0 is None:  # make a crude initial guess for parameters if not provided
+        p0 = guess_gaussian_2D_params(image)
+    popt, _ = curve_fit(_gaussian_2D, X, image_1D, p0=p0)
     return popt
 
 
