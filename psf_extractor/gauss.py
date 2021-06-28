@@ -7,7 +7,9 @@ __all__ = [
     'gaussian_2D',
     'elliptical_gaussian_2D',
     'super_gaussian_1D',
-    'super_elliptical_gaussian_2D'
+    'super_elliptical_gaussian_2D',
+    '',
+    ''
 ]
 
 
@@ -59,6 +61,27 @@ def super_elliptical_gaussian_2D(x, y, x0, y0, sigma_x, sigma_y, P, A, B):
     """
     E = (x-x0)**2/(2*sigma_x**2) + (y-y0)**2/(2*sigma_y**2)
     return A * np.exp(-E**P) + B
+
+
+def fit_gaussian_2D(image, p0=None):
+    """Fit a 2D Gaussian
+
+    References
+    ----------
+    [1] https://scipython.com/blog/non-linear-least-squares-fitting-of-a-two-dimensional-data/"""
+    # Make a meshgrid in the shape of the image
+    x = np.arange(image.shape[1])
+    y = np.arange(image.shape[0])
+    xx, yy = np.meshgrid(x, y)
+
+    # Ravel the meshgrids of X, Y points to a pair of 1D arrays
+    X = np.stack((xx.ravel(), yy.ravel()), axis=0)
+    # Ravel the image data
+    image_1D = image.ravel()
+
+    # Trick `curve_fit` into fitting 2D data
+    popt, pcov = curve_fit(_gaussian_2D, X, image_1D, p0=p0)
+    return popt
 
 
 def _gaussian_2D(M, *args):
