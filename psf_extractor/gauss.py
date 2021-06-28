@@ -21,9 +21,8 @@ def gaussian_2D(x, y, x0, y0, sigma_x, sigma_y, A, B):
     return A * np.exp(-E) + B
 
 
-
 def elliptical_gaussian_2D(x, y, x0, y0, sigma_x, sigma_y, theta, A, B):
-    """Elliptical 2D Gaussian function with added background
+    """Elliptical Gaussian function with added background
 
     References
     ----------
@@ -37,8 +36,8 @@ def elliptical_gaussian_2D(x, y, x0, y0, sigma_x, sigma_y, theta, A, B):
     return A * np.exp( -(a*(x-x0)**2 + 2*b*(x-x0)*(y-y0) + c*(y-y0)**2)) + B
 
 
-def super_gaussian(x, x0, sigma_x, P, A, B):
-    """Super Gaussian function
+def super_gaussian_1D(x, x0, sigma_x, P, A, B):
+    """Super (higher order) Gaussian function
 
     References
     ----------
@@ -49,10 +48,15 @@ def super_gaussian(x, x0, sigma_x, P, A, B):
     return A * np.exp(-E**P)**2 + B
 
 
+def super_elliptical_gaussian_2D(x, y, x0, y0, sigma_x, sigma_y, P, A, B):
+    """Higher order elliptical Gaussian function with added background
 
-# def super_gaussian_Daan(x, x0, sigma, amp, back, rank):
-#         return amp * ((np.exp(-(2 ** (2 * rank - 1)) * np.log(2) * (((x - x0) ** 2) / ((sigma) ** 2)) ** (rank))) ** 2) + back
-
+    References
+    ----------
+    [1] https://en.wikipedia.org/wiki/Gaussian_function#Higher-order_Gaussian_or_super-Gaussian_function
+    """
+    E = (x-x0)**2/(2*sigma_x**2) + (y-y0)**2/(2*sigma_y**2)
+    return A * np.exp(-E**P) + B
 
 
 
