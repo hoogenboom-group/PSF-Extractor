@@ -169,5 +169,5 @@ def create_substacks(stack, features, volume):
 
         # Create substacks
         substack = stack[z1:z2, y1:y2, x1:x2]
-    substacks.append(substack)
+        substacks.append(substack)
     return substacks
