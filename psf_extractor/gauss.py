@@ -61,7 +61,41 @@ def super_elliptical_gaussian_2D(x, y, x0, y0, sigma_x, sigma_y, P, A, B):
     return A * np.exp(-E**P) + B
 
 
+def _gaussian_2D(M, *args):
+    """Wrapper for `gaussian_2D` to pass to `scipy.optimize.curve_fit`
 
+    References
+    ----------
+    [1] https://scipython.com/blog/non-linear-least-squares-fitting-of-a-two-dimensional-data/
+    """
+    # M = array([[ 0,  1,  2, ..., N-2, N-1, N], --> x
+    #            [ 0,  0,  0, ..., N, N, N]])    --> y
+    x, y = M
+    return gaussian_2D(x, y, *args)
+
+
+def guess_gaussian_2D_params(image):
+    """Make initial estimates for a 2D Gaussian fit"""
+    # Mask the central spot
+    im = image.copy()
+    hm = im < im.max()/2  # threshold at half-maximum
+    im[hm] = 0
+    xy = np.argwhere(im > 0)
+    ys, xs = xy[:, 0], xy[:, 1]
+
+    # Make estimates for x0, y0
+    x0, y0 = xs.mean(), ys.mean()
+
+    # Make estimates for sigma_x, sigma_y
+    # sigma = FWHM / (2*sqrt(2*ln(2))) ~ FWHM / 2.355
+    sigma_x = (xs.max() - xs.min()) / 2.355
+    sigma_y = (ys.max() - ys.min()) / 2.355
+
+    # Estimates for amplitude and background
+    A = image.max()
+    B = image.mean()
+
+    return x0, y0, sigma_x, sigma_y, A, B
 
 
 
