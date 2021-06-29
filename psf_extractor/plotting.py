@@ -3,22 +3,25 @@ from matplotlib.patches import Ellipse
 
 
 __all__ = ['plot_psf',
-           'plot_localization_data']
+           'plot_psf_localizations']
 
 
 def plot_psf():
     pass
 
 
-def plot_localization_data(df):
-    """Plot localization data
+def plot_psf_localizations(df):
+    """Plot PSF localizations
 
     Parameters
     ----------
     df : `pd.DataFrame`
         Localization data with columns "x0", "y0", "z0",
-        "sigma_x", "sigma_y", "sigma_z"
-    
+        "sigma_x", "sigma_y", "sigma_z" where (z0, y0, x0)
+        is the center coordinate of the PSF within the stack
+        and (sigma_z, sigma_y, sigma_x) is the fitted
+        standard deviation of the PSF in each dimension
+
     Notes
     -----
     * Produces XY, YZ, and XZ projections of the fitted PSFs with the
