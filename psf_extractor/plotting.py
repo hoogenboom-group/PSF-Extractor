@@ -63,11 +63,14 @@ def plot_localization_data(df):
     # YZ projection
     axes[0,1].text(0.02, 0.02, 'YZ', fontsize=14, transform=axes[0,1].transAxes)
     axes[0,1].set_xlabel('Z [px]')
+    axes[0,1].set_ylabel('Y [px]')
     axes[0,1].xaxis.set_ticks_position('top')
     axes[0,1].xaxis.set_label_position('top')
     axes[0,1].yaxis.set_ticks_position('right')
+    axes[0,1].yaxis.set_label_position('right')
     # XZ projection
     axes[1,0].text(0.02, 0.02, 'XZ', fontsize=14, transform=axes[1,0].transAxes)
+    axes[1,0].set_xlabel('X [px]')
     axes[1,0].set_ylabel('Z [px]')
 
     for ax in [axes[0,0], axes[1,0], axes[0,1]]:
