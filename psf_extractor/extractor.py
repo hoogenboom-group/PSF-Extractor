@@ -8,7 +8,7 @@ from skimage import io
 
 __all__ = ['get_stack',
            'bboxes_overlap',
-           'create_substacks']
+           'extract_psfs']
 
 
 def get_stack(file_pattern):
@@ -122,37 +122,41 @@ def bboxes_overlap(bbox_1, bbox_2):
     return overlap
 
 
-def create_substacks(stack, features, volume):
-    """Create a subvolume for each detected feature while filtering out edge features
+def extract_psfs(stack, features, shape):
+    """Extract the PSF (aka subvolume) from each detected feature
+    while simultaneously filtering out edge features
 
     Parameters
     ----------
     stack : array-like
         Image stack of shape (3, M, N)
     features : `pd.DataFrame`
-        DataFrame of located features
-    volume : array-like or 3-tuple
-        Volume of the substacks to be created (wz, wy, wx)
+        DataFrame of detected features
+    shape : array-like or 3-tuple
+        The volume of the PSF to be extracted (wz, wy, wx)
 
     Returns
     -------
-    substacks : list
-        List of all the subvolumes as numpy arrays
+    psfs : list
+        List of all the PSFs as numpy arrays
     features : `pd.DataFrame`
         DataFrame of features with edge features removed
         
     Notes
     -----
-    * Feature is considered to be an edge feature if the subvolume of the feature extends
-      outside the image stack in x or y
+    * A feature is considered to be an edge feature if the volume of the
+      extracted PSF extends outside the image stack in x or y
     """
 
-    # Extract volume
-    wz, wy, wx = volume
+    # Unpack PSF shape
+    wz, wy, wx = shape
+    # Round up to nearest odd integer --> results in all extracted PSFs
+    # having the same shape
+    wz, wy, wx = np.ceil([wz, wy, wx]).astype(int) // 2 * 2 + 1
 
     # Iterate through features
-    substacks = []  # collect substacks
-    edge_features = []  # collect indices of edge feature
+    psfs = []  # collect PSFs
+    edge_features = []  # collect indices of edge features
     for i, row in features.iterrows():
 
         # Set z indices
@@ -188,12 +192,12 @@ def create_substacks(stack, features, volume):
         # Determine if feature is along the edge of the image stack
         if (x1 < 0) or (y1 < 0) or (x2 > stack.shape[2]) or (y2 > stack.shape[1]):
             edge_features.append(i)
-        # Create substacks
+        # Extract PSFs
         else:
-            substack = stack[z1:z2, y1:y2, x1:x2]
-            substacks.append(substack)
+            psf = stack[z1:z2, y1:y2, x1:x2]
+            psfs.append(psf)
 
     # Filter out edge features
     features = features.drop(edge_features).reset_index(drop=True)
 
-    return substacks, features
+    return psfs, features
