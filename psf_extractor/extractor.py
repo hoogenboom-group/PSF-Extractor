@@ -5,6 +5,8 @@ import numpy as np
 from skimage import img_as_float
 from skimage import io
 
+from .util import natural_sort
+
 
 __all__ = ['get_stack',
            'bboxes_overlap',
@@ -42,7 +44,6 @@ def get_stack(file_pattern):
     >>> file_pattern = '/path/to/tiff/stack/multipage.tif'
     >>> get_stack(file_pattern)
     """
-
     # If a list of file names is provided
     if isinstance(file_pattern, list):
         logging.info("Creating stack from list of filenames.")
@@ -59,14 +60,17 @@ def get_stack(file_pattern):
         # Directory
         if Path(file_pattern).is_dir():
             logging.info("Creating stack from directory.")
-            # Load every png/tif/tiff image in directory
+            # Collect every png/tif/tiff image in directory
             filepaths = list(Path(file_pattern).glob('*.png')) + \
                         list(Path(file_pattern).glob('*.tif')) + \
                         list(Path(file_pattern).glob('*.tiff'))
+            # Sort filepaths
+            filepaths = natural_sort([fp.as_posix() for fp in filepaths])
+            # Load images
             images = []
             for i, fp in enumerate(filepaths):
-                logging.info(f"Reading image file ({i+1}/{len(filepaths)}) : {fp.as_posix()}")
-                image = img_as_float(io.imread(fp.as_posix()))
+                logging.info(f"Reading image file ({i+1}/{len(filepaths)}) : {fp}")
+                image = img_as_float(io.imread(fp))
                 images.append(image)
             # Create 3D image stack (Length, Height, Width)
             stack = np.stack(images, axis=0)
