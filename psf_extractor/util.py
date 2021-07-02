@@ -1,7 +1,34 @@
+import re
 from matplotlib.colors import ListedColormap
 
 
-__all__ = ['get_Daans_special_cmap']
+__all__ = ['natural_sort',
+           'get_Daans_special_cmap']
+
+
+def natural_sort(l):
+    """A more natural sorting algorithm
+
+    Parameters
+    ----------
+    l : list
+        List of strings in need of sorting
+
+    Examples
+    --------
+    >>> l = ['elm0', 'elm1', 'Elm2', 'elm9', 'elm10', 'Elm11', 'Elm12', 'elm13']
+    >>> sorted(l)
+    ['Elm11', 'Elm12', 'Elm2', 'elm0', 'elm1', 'elm10', 'elm13', 'elm9']
+    >>> natural_sort(l)
+    ['elm0', 'elm1', 'Elm2', 'elm9', 'elm10', 'Elm11', 'Elm12', 'elm13']
+
+    References
+    ----------
+    [1] https://stackoverflow.com/a/4836734/5285918
+    """
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+    return sorted(l, key=alphanum_key)
 
 
 def get_Daans_special_cmap():
