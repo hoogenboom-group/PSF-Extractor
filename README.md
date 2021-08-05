@@ -1,5 +1,4 @@
 # PSF-Extractor
-This crazy thing Daan and Ernest wrote
 
 Created by Daan Boltje, Ernest van der Wee  
 Made presentable by Ryan Lane  
