@@ -3,6 +3,8 @@ from matplotlib.colors import ListedColormap
 
 
 __all__ = ['natural_sort',
+           'bboxes_overlap',
+           'is_notebook',
            'get_Daans_special_cmap']
 
 
@@ -29,6 +31,54 @@ def natural_sort(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
     return sorted(l, key=alphanum_key)
+
+
+def bboxes_overlap(bbox_1, bbox_2):
+    """Determines if two bounding boxes overlap or coincide
+
+    Parameters
+    ----------
+    bbox_1 : array-like (or 4-tuple)
+        1st bounding box
+        convention: (x_min, y_min, x_max, y_max)
+    bbox_2 : array-like (or 4-tuple)
+        2nd bounding box
+        convention: (x_min, y_min, x_max, y_max)
+
+    Returns
+    -------
+    overlap : bool
+        True if bounding boxes overlap / coincide
+        False otherwise
+
+    References
+    ----------
+    [1] https://stackoverflow.com/a/20925869/5285918
+    """
+    # 2 tiles overlap iff their projections onto both x and y axis overlap
+    # Overlap in 1D iff box1_max > box2_min AND box1_min < box2_max
+    overlap = ((bbox_1[2] >= bbox_2[0]) & (bbox_1[0] <= bbox_2[2])) & \
+              ((bbox_1[3] >= bbox_2[1]) & (bbox_1[1] <= bbox_2[3]))
+    return overlap
+
+
+def is_notebook():
+    """Attempts to determines whether code is being exectued in a notebook or not
+    
+    References
+    ----------
+    [1] https://stackoverflow.com/a/39662359/5285918
+    """
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False      # Probably standard Python interpreter
 
 
 def get_Daans_special_cmap():
