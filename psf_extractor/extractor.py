@@ -3,25 +3,31 @@ import logging
 
 import numpy as np
 from skimage import img_as_float
-from skimage import io
+from skimage import io, exposure
 
-from .util import natural_sort
+from .util import natural_sort, is_notebook
+
+if is_notebook():
+    from tqdm.notebook import tqdm
+else:
+    from tqdm import tqdm
 
 
-__all__ = ['get_stack',
-           'bboxes_overlap',
-           'extract_psfs']
+__all__ = ['load_stack',
+           'get_mip',
+           'extract_psfs',
+           'align_psfs']
 
 
-def get_stack(file_pattern):
+def load_stack(file_pattern):
     """Loads image stack
 
     Parameters
     ----------
     file_pattern : list or str
         Either a list of filenames or a string that is either
-        1) the individual filename of e.g. a tiff stack or
-        2) a directory from which all images will be loaded into the stack
+        a) the individual filename of e.g. a tiff stack or
+        b) a directory from which all images will be loaded into the stack
 
     Returns
     -------
@@ -85,7 +91,11 @@ def get_stack(file_pattern):
 
         # ?
         else:
-            raise ValueError(f"Not sure what to do with {file_pattern}.")
+            if Path(file_pattern).exists():
+                raise ValueError(f"Not sure what to do with `{file_pattern}`.")
+            else:
+                raise ValueError(f"`{file_pattern}` cannot be located or "
+                                  "does not exist.")
 
     else:
         raise TypeError("Must provide a directory, list of filenames, or the "
@@ -97,33 +107,42 @@ def get_stack(file_pattern):
     return stack
 
 
-def bboxes_overlap(bbox_1, bbox_2):
-    """Determines if two bounding boxes overlap or coincide
+def get_mip(stack, axis=0, normalize=True, log=False):
+    """Compute the maximum intensity projection along the given axis
 
     Parameters
     ----------
-    bbox_1 : array-like (or 4-tuple)
-        1st bounding box
-        convention: (x_min, y_min, x_max, y_max)
-    bbox_2 : array-like (or 4-tuple)
-        2nd bounding box
-        convention: (x_min, y_min, x_max, y_max)
+    stack : array-like
+        3D image stack
+    axis : int
+        Axis along which to compute the projection
+        0 --> z, 1 --> y, 2 --> x
+        Default : 0 (z)
+    normalize : bool
+        Whether to normalize the projection, also scales by 255
+        Default : True
+    log : bool
+        Whether to take the natural log
+        Default : False
 
     Returns
     -------
-    overlap : bool
-        True if bounding boxes overlap / coincide
-        False otherwise
-
-    References
-    ----------
-    [1] https://stackoverflow.com/a/20925869/5285918
+    mip : MxN array
+        Maximum intensity projection image
     """
-    # 2 tiles overlap iff their projections onto both x and y axis overlap
-    # Overlap in 1D iff box1_max > box2_min AND box1_min < box2_max
-    overlap = ((bbox_1[2] >= bbox_2[0]) & (bbox_1[0] <= bbox_2[2])) & \
-              ((bbox_1[3] >= bbox_2[1]) & (bbox_1[1] <= bbox_2[3]))
-    return overlap
+    # Calculate the maximum projection image of the image stack
+    mip = np.max(stack, axis=axis)
+    # Normalize the maximum intensity projection
+    if normalize:
+        # Rescale intensity to 255 because we will plot the natural log
+        mip = 255 * exposure.rescale_intensity(mip)
+    # Take natural log
+    if log:
+        # Funky out + where arguments to avoid /b0 error
+        mip = np.log(mip,
+                     out=np.zeros_like(mip),
+                     where=mip!=0)
+    return mip
 
 
 def extract_psfs(stack, features, shape):
@@ -151,7 +170,6 @@ def extract_psfs(stack, features, shape):
     * A feature is considered to be an edge feature if the volume of the
       extracted PSF extends outside the image stack in x or y
     """
-
     # Unpack PSF shape
     wz, wy, wx = shape
     # Round up to nearest odd integer --> results in all extracted PSFs
@@ -205,3 +223,64 @@ def extract_psfs(stack, features, shape):
     features = features.drop(edge_features).reset_index(drop=True)
 
     return psfs, features
+
+
+def align_psfs(psfs, locations, upsample_factor=2):
+    """Upsample, align, and sum PSFs
+
+    Parameters
+    ----------
+    psfs : list or array-like
+        List of PSFs
+    locations : `pd.DataFrame`
+        Localization data with z0, y0, and x0 positions
+    upsample_factor : scalar
+        Factor by which to upsample the PSFs...
+
+    Returns
+    -------
+    psf_sum : array-like
+        Aligned and summed together PSFs
+    """
+    # Alias upsample factor
+    usf = upsample_factor
+
+    # Loop through and sum psfs
+    psf_sum = 0
+    for i, psf in tqdm(enumerate(psfs), total=len(psfs)):
+
+        # Upsample PSFs
+        psf_up = psf.repeat(usf, axis=0)\
+                    .repeat(usf, axis=1)\
+                    .repeat(usf, axis=2)
+
+        # From fit
+        z0, y0, x0 = usf * locations.loc[i, ['z0', 'y0', 'x0']]
+        # PSF center
+        zc, yc, xc = (psf_up.shape[0]//2,
+                      psf_up.shape[1]//2,
+                      psf_up.shape[2]//2)
+
+        # Multidimensional ~roll~
+        dz, dy, dx = int(zc-z0), int(yc-y0), int(xc-x0)
+        psf_up_a = np.roll(psf_up, shift=(dz, dy, dx), axis=(0, 1, 2))
+
+        # Sum PSFs
+        psf_sum += psf_up_a
+
+    return psf_sum
+
+
+def crop_psf(psf):
+    """Crop an individual PSF"""
+    # Get dimensions
+    Nz, Ny, Nx = psf.shape
+    Nmin = np.min([Nz, Ny, Nx])
+
+    # Crop total psf to a cube defined by the smallest dimension
+    z1, z2 = (Nz-Nmin)//2, Nz - ((Nz-Nmin)//2) - Nz % 2
+    y1, y2 = (Ny-Nmin)//2, Ny - ((Ny-Nmin)//2) - Ny % 2
+    x1, x2 = (Nx-Nmin)//2, Nx - ((Nx-Nmin)//2) - Nx % 2
+    psf_cube = psf[z1:z2, y1:y2, x1:x2]
+
+    return psf_cube
