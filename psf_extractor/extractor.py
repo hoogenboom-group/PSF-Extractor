@@ -16,7 +16,8 @@ else:
 __all__ = ['load_stack',
            'get_mip',
            'extract_psfs',
-           'align_psfs']
+           'align_psfs',
+           'crop_psf']
 
 
 def load_stack(file_pattern):
