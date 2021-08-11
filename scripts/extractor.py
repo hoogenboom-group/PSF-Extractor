@@ -18,14 +18,16 @@ import psf_extractor as psfe
 from psf_extractor.util import get_Daans_special_cmap
 
 
+# TODO: make main function
+# TODO: CLI interface
+
+
 if __name__ == '__main__':
 
     # Set log level
     logging.getLogger().setLevel(logging.INFO)
     # Turn on interactive plotting
     plt.ion()
-    # Get Daan's special colormap
-    fire = get_Daans_special_cmap()
 
     # Request input
     # -------------
@@ -56,7 +58,7 @@ if __name__ == '__main__':
     dz = dz_nm / psz
 
     # Round diameters up to nearest odd integer (as per `trackpy` instructions)
-    diameters = np.ceil([dz, dy, dx]).astype(int) // 2 * 2 + 1
+    dx, dy, dz = np.ceil([dx, dy, dz]).astype(int) // 2*2+1
 
     # Maximum intensity projection
     # ----------------------------
@@ -69,7 +71,7 @@ if __name__ == '__main__':
     logging.info(f"Minimum masses: {min_masses}")
     logging.info("Finding features for each minimum mass...")
     # Make min mass figure
-    psfe.plot_min_masses(mip, dx, dy, min_masses)
+    psfe.plot_min_masses(stack, dx, dy, min_masses)
     logging.info("Generating plot...")
     # Request min mass
     min_mass = float(input("Choose minimum mass: "))
@@ -79,7 +81,7 @@ if __name__ == '__main__':
     # ---------------
     logging.info("Detecting beads...")
     df_features = trackpy.locate(mip,
-                                 diameter=diameters[1:],
+                                 diameter=[dy, dx],
                                  minmass=min_mass).reset_index(drop=True)
     n_beads = len(df_features)
     logging.info(f"{n_beads} beads detected.")

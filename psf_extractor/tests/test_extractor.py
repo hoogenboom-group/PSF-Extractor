@@ -58,3 +58,9 @@ class TestStack:
         stack = get_stack(file_pattern)
         # Known shape
         assert stack.shape == (23, 1749, 2034)
+
+
+class TestFeatures:
+
+    def test(self):
+        pass
