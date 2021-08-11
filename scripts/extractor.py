@@ -17,62 +17,11 @@ from skimage.transform import resize
 import psf_extractor as psfe
 from psf_extractor.util import get_Daans_special_cmap
 
-# Set log level
-logging.getLogger().setLevel(logging.INFO)
-
-
-def make_min_mass_figure(mipn, min_masses, diameters):
-    """Make minimum mass figure"""
-    # Set up figure
-    ncols = 3
-    nrows = int(np.ceil(len(min_masses) / ncols))
-    _, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(4*ncols, 4*nrows))
-
-    # Loop through candidate minimum masses
-    for i, min_mass in tqdm(enumerate(min_masses),
-                            total=len(min_masses)):
-
-        # Locate features
-        df_features = trackpy.locate(mipn,
-                                     diameter=diameters[1:],  # (y, x) only
-                                     minmass=min_mass).reset_index(drop=True)
-
-        # Plot max projection image
-        ax = axes.flat[i]
-        # Take log to enhance contrast (avoiding /b0 error)
-        mpn_log = np.log(mipn,
-                         out=np.zeros_like(mipn),
-                         where=mipn!=0)
-        ax.imshow(mpn_log, cmap=fire)
-        # Plot detected features
-        ax.plot(df_features['x'], df_features['y'], ls='', color='#00ff00',
-                marker='o', ms=15, mfc='none', mew=1)
-        title = f'Min Mass: {min_mass} | Features Detected: {len(df_features):.0f}'
-        ax.set_title(title)
-    # Show plot
-    plt.tight_layout()
-    plt.show()
-
-
-def make_mip_figure():
-    """Make subplots of maximum intensity projections of individual beads"""
-    # Extract PSFs
-    psfs, df_features_ = psfe.extract_psfs(stack, df_features, shape_psf)
-
-    # Create figure
-    ncols = 8
-    nrows = int(np.ceil(len(psfs) / ncols))
-    fig, axes = plt.subplots(ncols=ncols, nrows=nrows, figsize=(4*ncols, 4*nrows))
-    for i, psf in enumerate(psfs):
-        ax = axes.flat[i]
-        mip = np.max(psf, axis=0)
-        ax.imshow(mip, cmap=fire)
-    # Remove empty subplots
-    [fig.delaxes(axes.flat[-i-1]) for i in range(ncols*nrows - len(psfs))];
-
 
 if __name__ == '__main__':
 
+    # Set log level
+    logging.getLogger().setLevel(logging.INFO)
     # Turn on interactive plotting
     plt.ion()
     # Get Daan's special colormap
@@ -111,10 +60,7 @@ if __name__ == '__main__':
 
     # Maximum intensity projection
     # ----------------------------
-    # Calculate the maximum projection image of the image stack
-    mip = np.max(stack, axis=0)
-    # Normalize the maximum intensity projection
-    mipn = 255 * (mip - mip.min()) / (mip - mip.min()).max()
+    mip = psfe.get_mip(stack, axis=0, normalize=True)
 
     # Determine minimum mass
     # ----------------------
@@ -123,7 +69,7 @@ if __name__ == '__main__':
     logging.info(f"Minimum masses: {min_masses}")
     logging.info("Finding features for each minimum mass...")
     # Make min mass figure
-    make_min_mass_figure(mipn, min_masses, diameters)
+    psfe.plot_min_masses(mip, dx, dy, min_masses)
     logging.info("Generating plot...")
     # Request min mass
     min_mass = float(input("Choose minimum mass: "))
@@ -132,7 +78,7 @@ if __name__ == '__main__':
     # Locate features
     # ---------------
     logging.info("Detecting beads...")
-    df_features = trackpy.locate(mipn,
+    df_features = trackpy.locate(mip,
                                  diameter=diameters[1:],
                                  minmass=min_mass).reset_index(drop=True)
     n_beads = len(df_features)

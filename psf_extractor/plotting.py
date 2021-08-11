@@ -124,7 +124,7 @@ def plot_min_masses(stack, dx, dy, min_masses=None, axis=0):
 
         # Locate features
         df_features = trackpy.locate(mip,
-                                     diameter=(dy, dx), # expects row, col order
+                                     diameter=[dy, dx], # expects row, col order
                                      minmass=min_mass).reset_index(drop=True)
 
         # Plot max projection image
