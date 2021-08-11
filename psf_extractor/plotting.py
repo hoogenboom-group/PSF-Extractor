@@ -41,7 +41,7 @@ def plot_mip(stack, axis=0):
     plt.colorbar(im, cax=cax)
 
 
-def plot_features(stack, dx, dy, axis=0, min_mass=None):
+def plot_features(stack, dx, dy, min_mass=None, axis=0):
     """Detect features from maximum intensity projection and overlay them
 
     Parameters
@@ -85,7 +85,7 @@ def plot_features(stack, dx, dy, axis=0, min_mass=None):
     ax.set_title(title)
 
 
-def plot_min_masses(stack, dx, dy, axis=0, min_masses=None):
+def plot_min_masses(stack, dx, dy, min_masses=None, axis=0):
     """Plot detected features from MIP for a range of minimum masses
 
     Parameters
