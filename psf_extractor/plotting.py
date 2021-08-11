@@ -1,17 +1,22 @@
-from tqdm.notebook import tqdm
 import numpy as np
 import trackpy
+
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from .extractor import get_mip, crop_psf
 from .gauss import gaussian_1D, fit_gaussian_1D
-from .util import get_Daans_special_cmap
+from .util import get_Daans_special_cmap, is_notebook
+
+if is_notebook():
+    from tqdm.notebook import tqdm
+else:
+    from tqdm import tqdm
 
 
 __all__ = ['plot_mip',
-           'plot_minmasses_',
+           'plot_min_masses',
            'plot_features',
            'plot_psf',
            'plot_psfs',
@@ -55,7 +60,7 @@ def plot_features(stack, dx, dy, axis=0, min_mass=None):
     # Set minimum mass if not provided
     min_mass = 500
     # Get maximum intensity projection
-    mip = get_mip(stack, axis=axis)
+    mip = get_mip(stack, axis=axis, normalize=True)
 
     # Round diameters up to nearest odd integer (as per `trackpy` instructions)
     dx = int(np.ceil(dx)//2*2 + 1)
@@ -80,7 +85,7 @@ def plot_features(stack, dx, dy, axis=0, min_mass=None):
     ax.set_title(title)
 
 
-def plot_minmasses_(stack, dy, dx, axis=0, min_masses=None):
+def plot_min_masses(stack, dx, dy, axis=0, min_masses=None):
     """Plot detected features from MIP for a range of minimum masses
 
     Parameters
@@ -104,18 +109,18 @@ def plot_minmasses_(stack, dy, dx, axis=0, min_masses=None):
     if min_masses is None:
         min_masses = [50, 100, 200, 500, 1000, 2000]
 
+    # Get maximum intensity projection in given axis
+    mip = get_mip(stack, axis=axis, normalize=True)
+
     # Set up figure
     ncols = 3
     nrows = int(np.ceil(len(min_masses) / ncols))
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols,
-                             figsize=(6*ncols, 6*nrows))
+                             figsize=(4*ncols, 4*nrows))
 
     # Loop through candidate minimum masses
     for i, min_mass in tqdm(enumerate(min_masses),
                             total=len(min_masses)):
-
-        # Get maximum intensity projection in given axis
-        mip = get_mip(stack, axis=axis)
 
         # Locate features
         df_features = trackpy.locate(mip,
