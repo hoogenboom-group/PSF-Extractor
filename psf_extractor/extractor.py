@@ -141,7 +141,7 @@ def get_mip(stack, axis=0, normalize=True, log=False):
                      where=mip!=0)
     # Normalize the maximum intensity projection
     if normalize or log:  # automatically rescale if taking the log
-        mip = exposure.rescale_intensity(mip)
+        mip = exposure.rescale_intensity(mip, out_range=(0, 1))
     return mip
 
 

@@ -110,8 +110,8 @@ def plot_min_masses(stack, dx, dy, min_masses=None, axis=0):
     if min_masses is None:
         min_masses = [50, 100, 200, 500, 1000, 2000]
 
-    # Get maximum intensity projection in given axis
-    mip = get_mip(stack, axis=axis, normalize=True)
+    # Get maximum intensity projection in given axis and scale by 255 for trackpy
+    mip = 255*get_mip(stack, axis=axis, normalize=True)
 
     # Set up figure
     ncols = 3
