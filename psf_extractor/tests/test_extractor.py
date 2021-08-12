@@ -1,4 +1,4 @@
-from ..extractor import get_stack
+from ..extractor import load_stack
 
 
 class TestStack:
@@ -15,30 +15,30 @@ class TestStack:
             f'./data/sample_zstack_png_sequence/{stem}0005.png',
         ]
         # Create stack
-        stack = get_stack(file_pattern)
+        stack = load_stack(file_pattern)
         # Known shape
         assert stack.shape == (6, 2048, 2448)
 
     def test_list_tif(self):
         # List of tif files from data module
         file_pattern = [
-            f'./data/sample_zstack_tif_sequence/0.png',
-            f'./data/sample_zstack_tif_sequence/1.png',
-            f'./data/sample_zstack_tif_sequence/2.png',
-            f'./data/sample_zstack_tif_sequence/3.png',
-            f'./data/sample_zstack_tif_sequence/4.png',
-            f'./data/sample_zstack_tif_sequence/5.png',
+            './data/sample_zstack_tif_sequence/00.tif',
+            './data/sample_zstack_tif_sequence/01.tif',
+            './data/sample_zstack_tif_sequence/02.tif',
+            './data/sample_zstack_tif_sequence/03.tif',
+            './data/sample_zstack_tif_sequence/04.tif',
+            './data/sample_zstack_tif_sequence/05.tif',
         ]
         # Create stack
-        stack = get_stack(file_pattern)
+        stack = load_stack(file_pattern)
         # Known shape
-        assert stack.shape == (6, 2048, 2448)
+        assert stack.shape == (6, 1749, 2034)
 
     def test_directory_png(self):
         # Path to png stack directory
         file_pattern = './data/sample_zstack_png_sequence/'
         # Create stack
-        stack = get_stack(file_pattern)
+        stack = load_stack(file_pattern)
         # Known shape
         assert stack.shape == (32, 2048, 2448)
 
@@ -46,16 +46,16 @@ class TestStack:
         # Path to png stack directory
         file_pattern = './data/sample_zstack_tif_sequence/'
         # Create stack
-        stack = get_stack(file_pattern)
+        stack = load_stack(file_pattern)
         # Known shape
-        assert stack.shape == (32, 2048, 2448)
+        assert stack.shape == (23, 1749, 2034)
 
     def test_tif_stack(self):
         # Path to tif stack in data module
         file_pattern = './data/sample_zstack_single_tif/20201130_162150_collar' +\
                        '_0.146_yaw_1.62deg_cyls_corr_back_foc_325.3um_15deg.tif'
         # Create stack
-        stack = get_stack(file_pattern)
+        stack = load_stack(file_pattern)
         # Known shape
         assert stack.shape == (23, 1749, 2034)
 
