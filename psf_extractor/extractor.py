@@ -134,13 +134,12 @@ def get_mip(stack, axis=0, normalize=True, log=False):
     # Calculate the maximum projection image of the image stack
     mip = np.max(stack, axis=axis)
     # Normalize the maximum intensity projection
-    if normalize:
-        # Rescale intensity to 255 because we will plot the natural log
-        mip = 255 * exposure.rescale_intensity(mip)
+    if normalize or log:  # automatically rescale if taking the log
+        mip = exposure.rescale_intensity(mip)
     # Take natural log
     if log:
         # Funky out + where arguments to avoid /b0 error
-        mip = np.log(mip,
+        mip = np.log(255*mip,
                      out=np.zeros_like(mip),
                      where=mip!=0)
     return mip
