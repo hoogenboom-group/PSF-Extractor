@@ -58,7 +58,8 @@ def plot_features(stack, dx, dy, min_mass=None, axis=0):
         Defaults to 500
     """
     # Set minimum mass if not provided
-    min_mass = 500
+    if min_mass is None:
+        min_mass = 500
     # Get maximum intensity projection
     mip = get_mip(stack, axis=axis, normalize=True)
 
