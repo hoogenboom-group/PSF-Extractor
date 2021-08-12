@@ -147,30 +147,21 @@ def get_mip(stack, axis=0, normalize=True, log=False):
     return mip
 
 
-def remove_overlapping_features(features, psx, psy, dx_nm, dy_nm):
+def remove_overlapping_features(features, wx, wy):
     """Remove overlapping features from feature set
 
     Parameters
     ----------
     features : `pd.DataFrame`
         Feature set returned from `trackpy.locate`
-    psx, psy : scalar
-        Pixel sizes in x, y
-    dx_nm, dy_nm : scalar
-        Expected feature dimensions in x, y
-    
+    wx, wy : scalar
+        Dimensions of bounding boxes
+
     Returns
     -------
     features : `pd.DataFrame`
         Feature set with overlapping features removed
     """
-    # Arbitrarily set bounding box dimensions to 6x expected feature diameter
-    wx_nm = 6*dx_nm
-    wy_nm = 6*dy_nm
-    # Convert bounding box dimensions (μm --> px)
-    wx = wx_nm / psx
-    wy = wy_nm / psy
-
     # Create a bounding box for each bead
     df_bboxes = features.loc[:, ['x', 'y']]
     df_bboxes['x_min'] = features['x'] - wx/2
@@ -182,7 +173,6 @@ def remove_overlapping_features(features, psx, psy, dx_nm, dy_nm):
     overlapping_features = []
     # Iterate through every (unique) pair of bounding boxes
     ij = list(combinations(df_bboxes.index, 2))
-    logging.info("Checking beads for overlap...")
     for i, j in tqdm(ij, total=len(ij)):
 
         # Create bounding boxes for each pair of features
