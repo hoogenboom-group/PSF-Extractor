@@ -130,11 +130,11 @@ def plot_min_masses(stack, dx, dy, min_masses=None, axis=0):
 
         # Plot max projection image
         ax = axes.flat[i]
-        # Take log to enhance contrast (avoiding /b0 error)
-        mip_log = np.log(mip,
-                         out=np.zeros_like(mip),
-                         where=mip!=0)
-        ax.imshow(mip_log, cmap=fire)
+        # # Take log to enhance contrast (avoiding /b0 error)
+        # mip_log = np.log(mip,
+        #                  out=np.zeros_like(mip),
+        #                  where=mip!=0)
+        ax.imshow(mip, cmap=fire)
         # Plot detected features
         ax.plot(df_features['x'], df_features['y'], ls='', color='#00ff00',
                 marker='o', ms=15, mfc='none', mew=1)
