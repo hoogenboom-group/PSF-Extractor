@@ -2,7 +2,7 @@ from pathlib import Path
 import logging
 
 import numpy as np
-from skimage import img_as_float
+from skimage import img_as_float32
 from skimage import io, exposure
 
 from .util import natural_sort, is_notebook
@@ -33,7 +33,7 @@ def load_stack(file_pattern):
     Returns
     -------
     stack : array-like
-        Image stack as 64bit float with range of intensity values (0, 1)
+        Image stack as 32bit float with range of intensity values (0, 1)
 
     Examples
     --------
@@ -57,7 +57,7 @@ def load_stack(file_pattern):
         images = []
         for i, fp in enumerate(file_pattern):
             logging.info(f"Reading image file ({i+1}/{len(file_pattern)}) : {fp}")
-            image = img_as_float(io.imread(fp))
+            image = img_as_float32(io.imread(fp))
             images.append(image)
         # Create 3D image stack (Length, Height, Width)
         stack = np.stack(images, axis=0)
@@ -77,7 +77,7 @@ def load_stack(file_pattern):
             images = []
             for i, fp in enumerate(filepaths):
                 logging.info(f"Reading image file ({i+1}/{len(filepaths)}) : {fp}")
-                image = img_as_float(io.imread(fp))
+                image = img_as_float32(io.imread(fp))
                 images.append(image)
             # Create 3D image stack (Length, Height, Width)
             stack = np.stack(images, axis=0)
@@ -88,7 +88,7 @@ def load_stack(file_pattern):
              (Path(file_pattern).suffix == '.gif'):
             logging.info("Creating stack from tiff stack")
             # Create 3D image stack (Length, Height, Width)
-            stack = img_as_float(io.imread(file_pattern))
+            stack = img_as_float32(io.imread(file_pattern))
 
         # ?
         else:
@@ -105,7 +105,7 @@ def load_stack(file_pattern):
 
     # Return stack
     logging.info(f"{stack.shape} image stack created succesfully.")
-    return stack
+    return exposure.rescale_intensity(stack)
 
 
 def get_mip(stack, axis=0, normalize=True, log=False):
