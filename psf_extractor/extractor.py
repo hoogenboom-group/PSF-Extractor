@@ -1,11 +1,12 @@
 from pathlib import Path
 import logging
+from itertools import combinations
 
 import numpy as np
 from skimage import img_as_float32
 from skimage import io, exposure
 
-from .util import natural_sort, is_notebook
+from .util import natural_sort, bboxes_overlap, is_notebook
 
 if is_notebook():
     from tqdm.notebook import tqdm
@@ -15,6 +16,7 @@ else:
 
 __all__ = ['load_stack',
            'get_mip',
+           'remove_overlapping_features',
            'extract_psfs',
            'align_psfs',
            'crop_psf']
@@ -143,6 +145,57 @@ def get_mip(stack, axis=0, normalize=True, log=False):
     if normalize or log:  # automatically rescale if taking the log
         mip = exposure.rescale_intensity(mip, out_range=(0, 1))
     return mip
+
+
+def remove_overlapping_features(features, psx, psy, dx_nm, dy_nm):
+    """Remove overlapping features from feature set
+
+    Parameters
+    ----------
+    features : `pd.DataFrame`
+        Feature set returned from `trackpy.locate`
+    psx, psy : scalar
+        Pixel sizes in x, y
+    dx_nm, dy_nm : scalar
+        Expected feature dimensions in x, y
+    
+    Returns
+    -------
+    features : `pd.DataFrame`
+        Feature set with overlapping features removed
+    """
+    # Arbitrarily set bounding box dimensions to 6x expected feature diameter
+    wx_nm = 6*dx_nm
+    wy_nm = 6*dy_nm
+    # Convert bounding box dimensions (μm --> px)
+    wx = wx_nm / psx
+    wy = wy_nm / psy
+
+    # Create a bounding box for each bead
+    df_bboxes = features.loc[:, ['x', 'y']]
+    df_bboxes['x_min'] = features['x'] - wx/2
+    df_bboxes['y_min'] = features['y'] - wy/2
+    df_bboxes['x_max'] = features['x'] + wx/2
+    df_bboxes['y_max'] = features['y'] + wy/2
+
+    # Collect overlapping features
+    overlapping_features = []
+    # Iterate through every (unique) pair of bounding boxes
+    ij = list(combinations(df_bboxes.index, 2))
+    logging.info("Checking beads for overlap...")
+    for i, j in tqdm(ij, total=len(ij)):
+
+        # Create bounding boxes for each pair of features
+        bbox_i = df_bboxes.loc[i, ['x_min', 'y_min', 'x_max', 'y_max']].values
+        bbox_j = df_bboxes.loc[j, ['x_min', 'y_min', 'x_max', 'y_max']].values
+
+        # Check for overlap
+        if bboxes_overlap(bbox_i, bbox_j):
+            overlapping_features.append(i)
+            overlapping_features.append(j)
+
+    features = features.drop(index=overlapping_features).reset_index(drop=True)
+    return features
 
 
 def extract_psfs(stack, features, shape):
