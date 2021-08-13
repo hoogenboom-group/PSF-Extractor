@@ -53,6 +53,12 @@ def load_stack(file_pattern):
     >>> file_pattern = '/path/to/tiff/stack/multipage.tif'
     >>> get_stack(file_pattern)
     """
+    # TODO: we actually are not interested in loading the full
+    # stack into memory. Can we not load slice by slice and 
+    # build the MIP as we go? We are only interested in 
+    # isolated beads and a subvolume around not the full
+    # image stack. MemoryErrors can be avoided this way
+    
     # If a list of file names is provided
     if isinstance(file_pattern, list):
         logging.info("Creating stack from list of filenames.")
@@ -162,6 +168,10 @@ def remove_overlapping_features(features, wx, wy):
     features : `pd.DataFrame`
         Feature set with overlapping features removed
     """
+    # TODO: figure out why this is so much slower than
+    # previous blacklist function (which also checks
+    # against the image borders) 
+    
     # Create a bounding box for each bead
     df_bboxes = features.loc[:, ['x', 'y']]
     df_bboxes['x_min'] = features['x'] - wx/2

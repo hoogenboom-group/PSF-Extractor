@@ -26,6 +26,7 @@ __all__ = ['plot_mip',
 # No-brainer global variable
 fire = get_Daans_special_cmap()
 
+# TODO: rearrange and separate trackpy.locate from plotting
 
 def plot_mip(stack, axis=0):
     """Plot maximum intensity projection"""

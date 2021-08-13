@@ -100,6 +100,9 @@ def fit_gaussian_2D(image, p0=None):
     References
     ----------
     [1] https://scipython.com/blog/non-linear-least-squares-fitting-of-a-two-dimensional-data/"""
+    # TODO: check robustness parameter estimation 
+    # and fitting for data with high intensity outliers
+    
     # Make a meshgrid in the shape of the image
     x = np.arange(image.shape[1])
     y = np.arange(image.shape[0])
@@ -113,7 +116,10 @@ def fit_gaussian_2D(image, p0=None):
     # Trick `curve_fit` into fitting 2D data
     if p0 is None:  # make a crude initial guess for parameters if not provided
         p0 = guess_gaussian_2D_params(image)
-    popt, _ = curve_fit(_gaussian_2D, X, image_1D, p0=p0)
+    # Add bounds to avoid negative values for sigma
+    popt, _ = curve_fit(_gaussian_2D, X, image_1D, p0=p0,
+                        bounds=((-np.inf, -np.inf, 0, 0, 0, 0), 
+                                (np.inf, np.inf, np.inf, np.inf, np.inf, np.inf)))
     return popt
 
 
