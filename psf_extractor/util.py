@@ -1,77 +1,11 @@
-import pandas as pd
-import numpy as np
-import logging
 import re
-
 from matplotlib.colors import ListedColormap
-from .gauss import fit_gaussian_2D
 
 
-__all__ = ['fit_features_in_stack',
-           'natural_sort',
+__all__ = ['natural_sort',
            'bboxes_overlap',
            'is_notebook',
            'get_Daans_special_cmap']
-
-
-def fit_features_in_stack(stack, features, width=None):
-    """Fit 2D gaussian to each slice in stack. XY positions
-    defined in df.x and df.y.
-
-    Parameters
-    ----------
-    stack : array-like or list of filenames
-        Image stack of shape (L, M, N), L can be 0
-    features : `pd.DataFrame`
-        Feature set returned from `trackpy.locate`
-    width : scalar
-        Dimensions of bounding boxes
-
-    Returns
-    -------
-    fit_features : `pd.DataFrame`
-        DataFrame of resulting fit parameters for
-        each feature defined in 'pd.DataFrame' features
-        
-    Notes
-    -----
-    ...
-    """
-    if stack.ndim == 2: stack = [stack]
-    
-    # define cutout for each feature
-    if width is None:
-        width = 10 * features['size'].mean()
-    df_bboxes = features.loc[:, ['x', 'y']]
-    df_bboxes['x_min'] = features['x'] - width/2
-    df_bboxes['y_min'] = features['y'] - width/2
-    df_bboxes['x_max'] = features['x'] + width/2
-    df_bboxes['y_max'] = features['y'] + width/2
-
-    fit_results = []
-    # iterate through stack
-    for i, zslice in enumerate(stack):
-        fit_results.append([])
-        logging.info(f"Fitting slice ({i+1}/{len(stack)})")
-        # for each zslice and each bead fit feature with 2D Gauss
-        for j, row in df_bboxes.iterrows():
-            x1, x2, y1, y2 = [int(p) for p in [row.x_min, row.x_max, 
-                                               row.y_min, row.y_max]]
-            feature_image = zslice[y1:y2, x1:x2]
-            try:
-                popt = fit_gaussian_2D(feature_image)
-                fit_results[i].append(popt)
-            except:
-                fit_results[i].append(6*[np.nan])
-
-    fr = np.array(fit_results)
-    fit_features = pd.DataFrame()
-    for i in range(fr.shape[1]):
-        bead_df = (pd.DataFrame(fr[:, i, :], 
-                                columns=["x", "y", "sx", "sy", "A", "B"])
-                                .add_suffix(f"_{i}"))
-        fit_features = pd.concat([fit_features, bead_df], axis=1)
-    return fit_features
 
 
 def natural_sort(l):

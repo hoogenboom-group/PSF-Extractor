@@ -3,10 +3,12 @@ import logging
 from itertools import combinations
 
 import numpy as np
+import pandas as pd
 from skimage import img_as_float32
 from skimage import io, exposure
 
 from .util import natural_sort, bboxes_overlap, is_notebook
+from .gauss import fit_gaussian_2D
 
 if is_notebook():
     from tqdm.notebook import tqdm
@@ -19,7 +21,9 @@ __all__ = ['load_stack',
            'remove_overlapping_features',
            'extract_psfs',
            'align_psfs',
-           'crop_psf']
+           'crop_psf',
+           'fit_features_in_stack',
+           ]
 
 
 def load_stack(file_pattern):
@@ -337,3 +341,63 @@ def crop_psf(psf):
     psf_cube = psf[z1:z2, y1:y2, x1:x2]
 
     return psf_cube
+
+
+def fit_features_in_stack(stack, features, width=None):
+    """Fit 2D gaussian to each slice in stack. XY positions
+    defined in df.x and df.y.
+
+    Parameters
+    ----------
+    stack : array-like or list of filenames
+        Image stack of shape (L, M, N), L can be 0
+    features : `pd.DataFrame`
+        Feature set returned from `trackpy.locate`
+    width : scalar
+        Dimensions of bounding boxes
+
+    Returns
+    -------
+    fit_features : `pd.DataFrame`
+        DataFrame of resulting fit parameters for
+        each feature defined in 'pd.DataFrame' features
+        
+    Notes
+    -----
+    ...
+    """
+    if stack.ndim == 2: stack = [stack]
+    
+    # define cutout for each feature
+    if width is None:
+        width = 10 * features['size'].mean()
+    df_bboxes = features.loc[:, ['x', 'y']]
+    df_bboxes['x_min'] = features['x'] - width/2
+    df_bboxes['y_min'] = features['y'] - width/2
+    df_bboxes['x_max'] = features['x'] + width/2
+    df_bboxes['y_max'] = features['y'] + width/2
+
+    fit_results = []
+    # iterate through stack
+    for i, zslice in enumerate(stack):
+        fit_results.append([])
+        logging.info(f"Fitting slice ({i+1}/{len(stack)})")
+        # for each zslice and each bead fit feature with 2D Gauss
+        for j, row in df_bboxes.iterrows():
+            x1, x2, y1, y2 = [int(p) for p in [row.x_min, row.x_max, 
+                                               row.y_min, row.y_max]]
+            feature_image = zslice[y1:y2, x1:x2]
+            try:
+                popt = fit_gaussian_2D(feature_image)
+                fit_results[i].append(popt)
+            except:
+                fit_results[i].append(6*[np.nan])
+
+    fr = np.array(fit_results)
+    fit_features = pd.DataFrame()
+    for i in range(fr.shape[1]):
+        bead_df = (pd.DataFrame(fr[:, i, :], 
+                                columns=["x", "y", "sx", "sy", "A", "B"])
+                                .add_suffix(f"_{i}"))
+        fit_features = pd.concat([fit_features, bead_df], axis=1)
+    return fit_features
