@@ -23,11 +23,11 @@ __all__ = ['load_stack',
            'align_psfs',
            'crop_psf',
            'fit_features_in_stack',
-           ]
+]
 
 
 def load_stack(file_pattern):
-    """Loads image stack
+    """Load an image stack
 
     Parameters
     ----------
@@ -148,7 +148,7 @@ def get_mip(stack, axis=0, normalize=True, log=False):
     # Take natural log
     if log:
         # Funky out + where arguments to avoid /b0 error
-        mip = np.log(mip,
+        mip = np.log(255*mip,
                      out=np.zeros_like(mip),
                      where=mip!=0)
     # Normalize the maximum intensity projection

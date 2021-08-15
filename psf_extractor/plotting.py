@@ -42,7 +42,7 @@ def plot_mip(stack, axis=0):
     plt.colorbar(im, cax=cax)
 
 
-def plot_features(stack, dx, dy, min_mass=None, axis=0):
+def plot_features(stack, dx, dy, min_mass=500, axis=0):
     """Detect features from maximum intensity projection and overlay them
 
     Parameters
@@ -51,16 +51,14 @@ def plot_features(stack, dx, dy, min_mass=None, axis=0):
         3D image stack
     dx, dy : int
         Diameters in x and y
-    min_mass : scalar
+    min_mass : scalar, [default = 500]
         Minimum mass that gets passed to `trackpy.locate`.
         Minimum mass refers to the minimum integrated brightness, which
         is apparently "a crucial parameter for eliminating spurious
         features. See trackpy documentation for more details.
-        Defaults to 500
+    axis : scalar, [default = 0]
+        Axis along which to take maximum intensity projection
     """
-    # Set minimum mass if not provided
-    if min_mass is None:
-        min_mass = 500
     # Get maximum intensity projection
     mip = get_mip(stack, axis=axis, normalize=True)
 
@@ -102,6 +100,8 @@ def plot_min_masses(stack, dx, dy, min_masses=None, axis=0):
         is apparently "a crucial parameter for eliminating spurious
         features. See trackpy documentation for more details.
         Defaults to [50, 100, 200, 500, 1000, 2000]
+    axis : scalar, [default = 0]
+        Axis along which to take maximum intensity projection
     """
     # Round diameters up to nearest odd integer (as per `trackpy` instructions)
     dx = int(np.ceil(dx)//2*2 + 1)
@@ -111,8 +111,8 @@ def plot_min_masses(stack, dx, dy, min_masses=None, axis=0):
     if min_masses is None:
         min_masses = [50, 100, 200, 500, 1000, 2000]
 
-    # Get maximum intensity projection in given axis and scale by 255 for trackpy
-    mip = 255*get_mip(stack, axis=axis, normalize=True, log=True)
+    # Get maximum intensity projection in given axis
+    mip = get_mip(stack, axis=axis, normalize=True, log=True)
 
     # Set up figure
     ncols = 3
@@ -125,8 +125,8 @@ def plot_min_masses(stack, dx, dy, min_masses=None, axis=0):
                             total=len(min_masses)):
 
         # Locate features
-        df_features = trackpy.locate(mip,
-                                     diameter=[dy, dx], # expects row, col order
+        df_features = trackpy.locate(255*mip,  # expects 8bit input (?)
+                                     diameter=[dy, dx],  # expects row, col order
                                      minmass=min_mass).reset_index(drop=True)
 
         # Plot max projection image
