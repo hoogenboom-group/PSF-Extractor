@@ -15,7 +15,9 @@ INSTALL_REQUIRES = [
     'pandas',
     'matplotlib',
     'scikit-image',
-    'trackpy'
+    'trackpy',
+    'dask',
+    'joblib',
 ]
 
 if __name__ == '__main__':

@@ -94,8 +94,21 @@ def guess_gaussian_1D_params(y, x=None):
     return x0, sigma_x, A, B
 
 
-def fit_gaussian_2D(image, p0=None):
+def fit_gaussian_2D(image, p0=None, theta=None, epsilon=1e-3):
     """Fit a 2D Gaussian
+
+    Parameters
+    ----------
+    image : array-like
+    p0 : list of initial fitting estimates
+        Default : None
+    theta : float or 2-valued tuple
+        Determines whether an elliptical 2D Guassian is fitted.
+        float : fixates the angle during fitting
+        2-valued tuple : set the lower and upper bounds during fitting
+        None : default value, fit normal 2D Gaussian
+    epsilon : float
+        Theta fitting range
 
     References
     ----------
@@ -116,10 +129,23 @@ def fit_gaussian_2D(image, p0=None):
     # Trick `curve_fit` into fitting 2D data
     if p0 is None:  # make a crude initial guess for parameters if not provided
         p0 = guess_gaussian_2D_params(image)
-    # Add bounds to avoid negative values for sigma
-    popt, _ = curve_fit(_gaussian_2D, X, image_1D, p0=p0,
-                        bounds=((-np.inf, -np.inf, 0, 0, 0, 0), 
-                                (np.inf, np.inf, np.inf, np.inf, np.inf, np.inf)))
+     
+    # Add bounds to avoid negative values for sigma     
+    fit_bounds = ([-np.inf, -np.inf, 0, 0, 0, 0], 
+          [np.inf, np.inf, np.inf, np.inf, np.inf, np.inf])
+    if theta is None:
+        fit_func = _gaussian_2D
+    else:
+        fit_func = _elliptical_gaussian_2D
+        if type(theta) is tuple:
+            # TODO make sure tuple length is 2
+            for i in range(2): fit_bounds[i].insert(4, theta[i])
+        else:
+            for i in range(2): fit_bounds[i].insert(4, theta+(2*(i-0.5)*epsilon))
+        p0 = list(p0)
+        p0.insert(4, np.mean(theta))
+    popt, _ = curve_fit(fit_func, X, image_1D, p0=p0, 
+                        bounds=fit_bounds)
     return popt
 
 
@@ -134,6 +160,22 @@ def _gaussian_2D(M, *args):
     #            [ 0,  0,  0, ..., N, N, N]])    --> y
     x, y = M
     return gaussian_2D(x, y, *args)
+
+
+def _elliptical_gaussian_2D(M, *args):
+    """Wrapper for `elliptical_gaussian_2D` to pass 
+    to `scipy.optimize.curve_fit`
+
+    References
+    ----------
+    [1] https://scipython.com/blog/non-linear-least-squares-fitting-of-a-two-dimensional-data/
+    """
+    # TODO: don't like to have two almost identical 
+    # wrapper functions
+    # M = array([[ 0,  1,  2, ..., N-2, N-1, N], --> x
+    #            [ 0,  0,  0, ..., N, N, N]])    --> y
+    x, y = M
+    return elliptical_gaussian_2D(x, y, *args)
 
 
 def guess_gaussian_2D_params(image):

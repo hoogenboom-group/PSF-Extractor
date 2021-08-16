@@ -4,6 +4,7 @@ from itertools import combinations
 
 import numpy as np
 import pandas as pd
+import dask.array as da
 from skimage import img_as_float32
 from skimage import io, exposure
 
@@ -23,11 +24,12 @@ __all__ = ['load_stack',
            'align_psfs',
            'crop_psf',
            'fit_features_in_stack',
-]
+           ]
 
 
 def load_stack(file_pattern):
-    """Load an image stack
+    """Loads image stack into dask array allowing manipulation
+    of large datasets.
 
     Parameters
     ----------
@@ -38,7 +40,7 @@ def load_stack(file_pattern):
 
     Returns
     -------
-    stack : array-like
+    stack : dask array-like
         Image stack as 32bit float with range of intensity values (0, 1)
 
     Examples
@@ -57,11 +59,7 @@ def load_stack(file_pattern):
     >>> file_pattern = '/path/to/tiff/stack/multipage.tif'
     >>> get_stack(file_pattern)
     """
-    # TODO: we actually are not interested in loading the full
-    # stack into memory. Can we not load slice by slice and 
-    # build the MIP as we go? We are only interested in 
-    # isolated beads and a subvolume around not the full
-    # image stack. MemoryErrors can be avoided this way
+
     
     # If a list of file names is provided
     if isinstance(file_pattern, list):
@@ -72,7 +70,7 @@ def load_stack(file_pattern):
             image = img_as_float32(io.imread(fp))
             images.append(image)
         # Create 3D image stack (Length, Height, Width)
-        stack = np.stack(images, axis=0)
+        stack = da.stack(images, axis=0)
 
     # If a directory or individual filename
     elif isinstance(file_pattern, str):
@@ -92,7 +90,7 @@ def load_stack(file_pattern):
                 image = img_as_float32(io.imread(fp))
                 images.append(image)
             # Create 3D image stack (Length, Height, Width)
-            stack = np.stack(images, axis=0)
+            stack = da.stack(images, axis=0)
 
         # Tiff stack or gif
         elif (Path(file_pattern).suffix == '.tif') or \
@@ -100,7 +98,7 @@ def load_stack(file_pattern):
              (Path(file_pattern).suffix == '.gif'):
             logging.info("Creating stack from tiff stack")
             # Create 3D image stack (Length, Height, Width)
-            stack = img_as_float32(io.imread(file_pattern))
+            stack = da.array(img_as_float32(io.imread(file_pattern)))
 
         # ?
         else:
@@ -148,7 +146,7 @@ def get_mip(stack, axis=0, normalize=True, log=False):
     # Take natural log
     if log:
         # Funky out + where arguments to avoid /b0 error
-        mip = np.log(255*mip,
+        mip = np.log(mip,
                      out=np.zeros_like(mip),
                      where=mip!=0)
     # Normalize the maximum intensity projection
@@ -343,18 +341,21 @@ def crop_psf(psf):
     return psf_cube
 
 
-def fit_features_in_stack(stack, features, width=None):
+def fit_features_in_stack(stack, features, width=None, theta=None):
     """Fit 2D gaussian to each slice in stack. XY positions
-    defined in df.x and df.y.
+    defined 'x' and 'y' columns of features `pd.DataFrame'.
 
     Parameters
     ----------
-    stack : array-like or list of filenames
+    stack : array-like 
         Image stack of shape (L, M, N), L can be 0
     features : `pd.DataFrame`
         Feature set returned from `trackpy.locate`
     width : scalar
         Dimensions of bounding boxes
+    theta : float or 2-valued tuple
+        Angle bounds or estimate for elliptical 
+        Gaussian fit
 
     Returns
     -------
@@ -366,6 +367,8 @@ def fit_features_in_stack(stack, features, width=None):
     -----
     ...
     """
+    df_cols = ["x", "y", "sx", "sy", "A", "B"]
+    if not theta is None: df_cols.insert(4, "t")
     if stack.ndim == 2: stack = [stack]
     
     # define cutout for each feature
@@ -388,16 +391,16 @@ def fit_features_in_stack(stack, features, width=None):
                                                row.y_min, row.y_max]]
             feature_image = zslice[y1:y2, x1:x2]
             try:
-                popt = fit_gaussian_2D(feature_image)
+                popt = fit_gaussian_2D(feature_image, theta=theta)
                 fit_results[i].append(popt)
             except:
-                fit_results[i].append(6*[np.nan])
+                fit_results[i].append(len(df_cols)*[np.nan])
 
     fr = np.array(fit_results)
     fit_features = pd.DataFrame()
     for i in range(fr.shape[1]):
         bead_df = (pd.DataFrame(fr[:, i, :], 
-                                columns=["x", "y", "sx", "sy", "A", "B"])
+                                columns=df_cols)
                                 .add_suffix(f"_{i}"))
         fit_features = pd.concat([fit_features, bead_df], axis=1)
     return fit_features
