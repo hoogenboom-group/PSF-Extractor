@@ -9,7 +9,7 @@ from skimage import img_as_float32
 from skimage import io, exposure
 
 from .util import natural_sort, bboxes_overlap, is_notebook
-from .gauss import fit_gaussian_2D
+from .gauss import fit_gaussian_2D, fit_gaussian_1D
 
 if is_notebook():
     from tqdm.notebook import tqdm
@@ -24,6 +24,7 @@ __all__ = ['load_stack',
            'align_psfs',
            'crop_psf',
            'fit_features_in_stack',
+           'get_theta',
            ]
 
 
@@ -404,3 +405,36 @@ def fit_features_in_stack(stack, features, width=None, theta=None):
                                 .add_suffix(f"_{i}"))
         fit_features = pd.concat([fit_features, bead_df], axis=1)
     return fit_features
+    
+    
+def get_theta(psf, fit_range=10):
+    """Get theta from astigmatic PSF.
+
+    Parameters
+    ----------
+    psf : array-like 
+        Image stack of shape (L, M, N)
+
+    Returns
+    -------
+    theta : float
+        Astigmatic angle 
+        
+    Notes
+    -----
+    ...
+    """
+    z_sum = psf.sum(axis=(1, 2))
+    z, sigma_z, A, B = fit_gaussian_1D(z_sum)
+    
+    z0, z1 = round(z - fit_range), round(z + fit_range)
+    z = round(z)
+
+    mip0, mip1 = get_mip(psf[z0:z]), get_mip(psf[z:z1])
+    
+    popt0 = fit_gaussian_2D(mip0, theta=(0,360))
+    popt1 = fit_gaussian_2D(mip1, theta=popt0[4], epsilon=10)
+    
+    theta = np.mean([popt0[4], popt1[4]])
+    
+    return theta
