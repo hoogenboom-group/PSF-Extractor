@@ -115,10 +115,11 @@ def fit_gaussian_2D(image, p0=None, theta=None, epsilon=1e-3):
     [1] https://scipython.com/blog/non-linear-least-squares-fitting-of-a-two-dimensional-data/"""
     # TODO: check robustness parameter estimation 
     # and fitting for data with high intensity outliers
+    sy, sx = image.shape
     
     # Make a meshgrid in the shape of the image
-    x = np.arange(image.shape[1])
-    y = np.arange(image.shape[0])
+    x = np.arange(sx)
+    y = np.arange(sy)
     xx, yy = np.meshgrid(x, y)
 
     # Ravel the meshgrids of X, Y points to a pair of 1D arrays
@@ -132,7 +133,7 @@ def fit_gaussian_2D(image, p0=None, theta=None, epsilon=1e-3):
      
     # Add bounds to maintain sanity     
     fit_bounds = ([0, 0, 0, 0, 0, 0], 
-          [x, y, x, y, image.max(), image.max()])
+          [sx, sy, sx, sy, image.max(), image.max()])
     if theta is None:
         fit_func = _gaussian_2D
     else:
