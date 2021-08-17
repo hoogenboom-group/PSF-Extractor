@@ -130,9 +130,9 @@ def fit_gaussian_2D(image, p0=None, theta=None, epsilon=1e-3):
     if p0 is None:  # make a crude initial guess for parameters if not provided
         p0 = guess_gaussian_2D_params(image)
      
-    # Add bounds to avoid negative values for sigma     
-    fit_bounds = ([-np.inf, -np.inf, 0, 0, 0, 0], 
-          [np.inf, np.inf, np.inf, np.inf, np.inf, np.inf])
+    # Add bounds to maintain sanity     
+    fit_bounds = ([0, 0, 0, 0, 0, 0], 
+          [x, y, x, y, image.max(), image.max()])
     if theta is None:
         fit_func = _gaussian_2D
     else:
