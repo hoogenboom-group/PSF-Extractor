@@ -48,6 +48,6 @@ def pfit_features_in_stack(stack, features, width=None, theta=None,
     fit_features = Parallel(n_jobs=num_cores) \
                            (delayed(fit_features_in_stack) \
                            (stack[i], features, width, theta) \
-                           for i in tqdm(range(len(stack))))
+                           for i in tqdm(range(len(stack)), leave=False))
     return pd.concat(fit_features, ignore_index=True)
     

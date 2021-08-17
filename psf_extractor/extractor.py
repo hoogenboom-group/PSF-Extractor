@@ -5,7 +5,7 @@ from itertools import combinations
 import numpy as np
 import pandas as pd
 import dask.array as da
-from skimage import img_as_float32
+from skimage import img_as_uint
 from skimage import io, exposure
 
 from .util import natural_sort, bboxes_overlap, is_notebook
@@ -42,7 +42,7 @@ def load_stack(file_pattern):
     Returns
     -------
     stack : dask array-like
-        Image stack as 32bit float with range of intensity values (0, 1)
+        Image stack as 16bit uint with range of intensity values (0, 65535)
 
     Examples
     --------
@@ -68,7 +68,7 @@ def load_stack(file_pattern):
         images = []
         for i, fp in enumerate(file_pattern):
             logging.info(f"Reading image file ({i+1}/{len(file_pattern)}) : {fp}")
-            image = img_as_float32(io.imread(fp))
+            image = img_as_uint(io.imread(fp))
             images.append(image)
         # Create 3D image stack (Length, Height, Width)
         stack = da.stack(images, axis=0)
@@ -88,7 +88,7 @@ def load_stack(file_pattern):
             images = []
             for i, fp in enumerate(filepaths):
                 logging.info(f"Reading image file ({i+1}/{len(filepaths)}) : {fp}")
-                image = img_as_float32(io.imread(fp))
+                image = img_as_uint(io.imread(fp))
                 images.append(image)
             # Create 3D image stack (Length, Height, Width)
             stack = da.stack(images, axis=0)
@@ -99,7 +99,7 @@ def load_stack(file_pattern):
              (Path(file_pattern).suffix == '.gif'):
             logging.info("Creating stack from tiff stack")
             # Create 3D image stack (Length, Height, Width)
-            stack = da.array(img_as_float32(io.imread(file_pattern)))
+            stack = da.array(img_as_uint(io.imread(file_pattern)))
 
         # ?
         else:
@@ -116,7 +116,7 @@ def load_stack(file_pattern):
 
     # Return stack
     logging.info(f"{stack.shape} image stack created succesfully.")
-    return exposure.rescale_intensity(stack)
+    return stack
 
 
 def get_mip(stack, axis=0, normalize=True, log=False):
