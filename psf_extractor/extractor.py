@@ -368,6 +368,8 @@ def fit_features_in_stack(stack, features, width=None, theta=None):
     -----
     ...
     """
+    stack = np.array(stack)
+    
     df_cols = ["x", "y", "sx", "sy", "A", "B"]
     if not theta is None: df_cols.insert(4, "t")
     if stack.ndim == 2: stack = [stack]
