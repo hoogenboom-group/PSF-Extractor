@@ -16,6 +16,7 @@ INSTALL_REQUIRES = [
     'matplotlib',
     'scikit-image',
     'trackpy',
+    'tqdm',
     'dask',
     'joblib',
 ]
