@@ -61,7 +61,6 @@ def load_stack(file_pattern):
     >>> get_stack(file_pattern)
     """
 
-    
     # If a list of file names is provided
     if isinstance(file_pattern, list):
         logging.info("Creating stack from list of filenames.")
@@ -116,6 +115,7 @@ def load_stack(file_pattern):
 
     # Return stack
     logging.info(f"{stack.shape} image stack created succesfully.")
+    stack = exposure.rescale_intensity(stack, out_range=np.float32)
     return stack
 
 
