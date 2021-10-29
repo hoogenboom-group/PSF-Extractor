@@ -5,7 +5,7 @@ Made presentable by Ryan Lane
 Input from Yoram Vos
 
 ### Installation
-* Create a new conda environment (assumes Anaconda or Miniconda is already installed)
+* Create a new conda environment (assumes Anaconda or Miniconda is already installed) from the terminal
 ```
 $ conda create -n psf -c conda-forge numpy scipy pandas matplotlib scikit-image jupyterlab trackpy pims
 ```
