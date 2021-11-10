@@ -86,7 +86,7 @@ def load_stack(file_pattern):
             # Load images
             images = []
             for i, fp in enumerate(filepaths):
-                logging.info(f"Reading image file ({i+1}/{len(filepaths)}) : {fp}")
+                logging.debug(f"Reading image file ({i+1}/{len(filepaths)}) : {fp}")
                 image = img_as_uint(io.imread(fp))
                 images.append(image)
             # Create 3D image stack (Length, Height, Width)
