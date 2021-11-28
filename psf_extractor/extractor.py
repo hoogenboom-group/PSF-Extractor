@@ -59,7 +59,7 @@ def load_stack(file_pattern):
     Returns
     -------
     stack : dask array-like
-        Image stack as 16bit uint with range of intensity values (0, 65535)
+        Image stack as 32bit float with (0, 1) range in intensity
 
     Examples
     --------

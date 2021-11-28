@@ -28,8 +28,41 @@ fire = get_Daans_special_cmap()
 
 # TODO: rearrange and separate trackpy.locate from plotting
 
-def plot_mip(mip):
-    """Plot maximum intensity projection"""
+def plot_mip(mip, axis=0, normalize=True, log=True, clip_pct=0):
+    """Plot the maximum intensity projection
+
+    Parameters
+    ----------
+    mip : array-like
+        2D max intensity projection
+    axis : int (optional)
+        Axis along which to compute the projection
+        0 --> z, 1 --> y, 2 --> x
+        Default : 0 (z)
+    normalize : bool (optional)
+        Whether to normalize the projection, also scales by 255
+        Default : True
+    log : bool (optional)
+        Whether to take the natural log
+        Default : False
+    clip_pct : scalar (optional)
+        % by which to clip the intensity
+        Default: 0
+    """
+    # Take natural log
+    if log:
+        # Scaling factor (such that log(min) = 0
+        s = 1/mip[mip!=0].min()
+        # Funky out + where arguments to avoid /b0 error
+        mip = np.log(s*mip,
+                     out=np.zeros_like(mip),
+                     where=mip!=0)
+    # Normalize (rescale) the maximum intensity projection
+    if normalize or log or clip_pct:  # automatically rescale if taking
+                                      # the log or if `clip_pct` provided
+        p1, p2 = np.percentile(mip, (clip_pct, 100-clip_pct))
+        mip = exposure.rescale_intensity(mip, in_range=(p1, p2), out_range=(0, 1))
+
     # Create figure
     fig, ax = plt.subplots(figsize=(7, 7))
     im = ax.imshow(mip, cmap=fire)
