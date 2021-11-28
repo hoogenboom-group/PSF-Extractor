@@ -28,10 +28,8 @@ fire = get_Daans_special_cmap()
 
 # TODO: rearrange and separate trackpy.locate from plotting
 
-def plot_mip(stack, axis=0):
+def plot_mip(mip):
     """Plot maximum intensity projection"""
-    # Get maximum intensity projection
-    mip = get_mip(stack, axis=axis, log=True)
     # Create figure
     fig, ax = plt.subplots(figsize=(7, 7))
     im = ax.imshow(mip, cmap=fire)

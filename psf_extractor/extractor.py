@@ -1,20 +1,37 @@
 from pathlib import Path
+import multiprocessing
+import psutil
 import logging
 from itertools import combinations
 
 import numpy as np
 import pandas as pd
-import dask.array as da
 from skimage import img_as_uint
 from skimage import io, exposure
 
 from .util import natural_sort, bboxes_overlap, is_notebook
 from .gauss import fit_gaussian_2D, fit_gaussian_1D
 
+
+# Check for dask
+try:
+    import dask.array as da
+    from dask_image.imread import imread
+    _has_dask = True
+except ImportError:
+    logging.warn("Dask not installed. No support for large (> RAM) stacks.")
+    _has_dask = False
+
+# Determine whether in notebook environment (for tqdm aesthetics)
 if is_notebook():
     from tqdm.notebook import tqdm
 else:
     from tqdm import tqdm
+
+# Get CPU info
+N_CORES = multiprocessing.cpu_count()
+MEM_TOT = psutil.virtual_memory().total / 1e9
+MEM_FREE = psutil.virtual_memory().free / 1e9
 
 
 __all__ = ['load_stack',
@@ -65,12 +82,13 @@ def load_stack(file_pattern):
     if isinstance(file_pattern, list):
         logging.info("Creating stack from list of filenames.")
         images = []
-        for i, fp in enumerate(file_pattern):
+        for i, fp in tqdm(enumerate(file_pattern),
+                          total=len(file_pattern)):
             logging.debug(f"Reading image file ({i+1}/{len(file_pattern)}) : {fp}")
-            image = img_as_uint(io.imread(fp))
+            image = io.imread(fp)
             images.append(image)
         # Create 3D image stack (Length, Height, Width)
-        stack = da.stack(images, axis=0)
+        stack = np.stack(images, axis=0)
 
     # If a directory or individual filename
     elif isinstance(file_pattern, str):
@@ -85,12 +103,13 @@ def load_stack(file_pattern):
             filepaths = natural_sort([fp.as_posix() for fp in filepaths])
             # Load images
             images = []
-            for i, fp in enumerate(filepaths):
+            for i, fp in tqdm(enumerate(filepaths),
+                              total=len(filepaths)):
                 logging.debug(f"Reading image file ({i+1}/{len(filepaths)}) : {fp}")
-                image = img_as_uint(io.imread(fp))
+                image = io.imread(fp)
                 images.append(image)
             # Create 3D image stack (Length, Height, Width)
-            stack = da.stack(images, axis=0)
+            stack = np.stack(images, axis=0)
 
         # Tiff stack or gif
         elif (Path(file_pattern).suffix == '.tif') or \
@@ -98,7 +117,7 @@ def load_stack(file_pattern):
              (Path(file_pattern).suffix == '.gif'):
             logging.info("Creating stack from tiff stack")
             # Create 3D image stack (Length, Height, Width)
-            stack = da.array(img_as_uint(io.imread(file_pattern)))
+            stack = io.imread(file_pattern)
 
         # ?
         else:
@@ -119,7 +138,7 @@ def load_stack(file_pattern):
     return stack
 
 
-def get_mip(stack, axis=0, normalize=True, log=False):
+def get_mip(stack, axis=0, normalize=True, log=False, clip_pct=0):
     """Compute the maximum intensity projection along the given axis
 
     Parameters
@@ -136,6 +155,8 @@ def get_mip(stack, axis=0, normalize=True, log=False):
     log : bool
         Whether to take the natural log
         Default : False
+    clip_pct : scalar
+        % by which to clip the intensity
 
     Returns
     -------
@@ -146,13 +167,17 @@ def get_mip(stack, axis=0, normalize=True, log=False):
     mip = np.max(stack, axis=axis)
     # Take natural log
     if log:
+        # Scaling factor (such that log(min) = 0
+        s = 1/mip[mip!=0].min()
         # Funky out + where arguments to avoid /b0 error
-        mip = np.log(mip,
+        mip = np.log(s*mip,
                      out=np.zeros_like(mip),
                      where=mip!=0)
-    # Normalize the maximum intensity projection
-    if normalize or log:  # automatically rescale if taking the log
-        mip = exposure.rescale_intensity(mip, out_range=(0, 1))
+    # Normalize (rescale) the maximum intensity projection
+    if normalize or log or clip_pct:  # automatically rescale if taking
+                                      # the log or if `clip_pct` provided
+        p1, p2 = np.percentile(mip, (clip_pct, 100-clip_pct))
+        mip = exposure.rescale_intensity(mip, in_range=(p1, p2), out_range=(0, 1))
     return mip
 
 
