@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 DISTNAME = 'PSF-Extractor'
-DESCRIPTION = 'PSF-Extractor: Some crazy mess Daan and Ernest made'
+DESCRIPTION = 'PSF-Extractor: Characterize the PSF of an optical setup'
 MAINTAINER = 'Ryan Lane'
 MAINTAINER_EMAIL = 'r.i.lane@tudelft.nl'
 LICENSE = 'LICENSE'
