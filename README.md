@@ -33,5 +33,8 @@ $ conda activate psf
 
 * Start jupyter lab session
 ```
+(psf) $ cd /path/to/PSF-Extractor/
 (psf) $ jupyter lab
 ```
+
+* Run `walkthrough.ipynb`
