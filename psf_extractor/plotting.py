@@ -1,5 +1,6 @@
 import numpy as np
 import trackpy
+from skimage import exposure
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
