@@ -36,6 +36,7 @@ MEM_FREE = psutil.virtual_memory().free / 1e9
 __all__ = ['load_stack',
            'get_mip',
            'get_min_masses',
+           'get_max_masses',
            'remove_overlapping_features',
            'extract_psfs',
            'align_psfs',
