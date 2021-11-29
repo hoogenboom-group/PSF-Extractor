@@ -167,8 +167,10 @@ def plot_mass_range(mip, dx, dy=None, masses=None, filtering='min',
         # Filter based on (raw) mass
         if filtering == 'min':
             df = df_features.loc[df_features['raw_mass'] > mass]
-        else:
+        elif filtering == 'max':
             df = df_features.loc[df_features['raw_mass'] < mass]
+        else:
+            raise ValueError("`filtering` must be one of 'min' or 'max'.")
 
         # Plot max projection image
         ax = axes.flat[i]
@@ -200,14 +202,17 @@ def plot_mass_range_interactive(mip, mass, df_features, filtering='min'):
                      out=np.zeros_like(mip),
                      where=mip!=0)  # avoid /b0 error
 
-    # Set up figure
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.imshow(mip_log, cmap=fire)  # plot MIP
     # Filter based on (raw) mass
     if filtering == 'min':
         df = df_features.loc[df_features['raw_mass'] > mass]
-    else:
+    elif filtering == 'max':
         df = df_features.loc[df_features['raw_mass'] < mass]
+    else:
+        raise ValueError("`filtering` must be one of 'min' or 'max'.")
+
+    # Set up figure
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.imshow(mip_log, cmap=fire)  # plot MIP
     ax.plot(df['x'], df['y'], ls='', color='#00ff00',
             marker='o', ms=15, mfc='none', mew=1)
     title = f'Features Detected: {len(df):.0f}'
