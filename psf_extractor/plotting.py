@@ -17,8 +17,8 @@ else:
 
 
 __all__ = ['plot_mip',
-           'plot_min_masses',
-           'plot_min_masses_interactive',
+           'plot_mass_range',
+           'plot_mass_range_interactive',
            'plot_features',
            'plot_psf',
            'plot_psfs',
