@@ -183,12 +183,12 @@ def get_mip(stack, axis=0, normalize=True, log=False, clip_pct=0):
 def get_min_masses(mip, dx, n=6, b=5):
     """Infer range of candidate minimum masses.
 
-    Features returned by `trackpy.locate` are filtered by mass (essentially
-    a feature's total integrated brightness/intensity). It is important to
-    choose a reasonable lower bound for mass to filter out spurious bright
-    features (salt), smaller than the PSF, but it is difficult know what this
-    bound is a priori. So it is useful to sample a logarithmic range of
-    candidate lower bounds and choose a proper minimum mass based on visual
+    Features returned by `trackpy.locate` are filtered by mass (essentially 
+    a feature's total integrated brightness/intensity). It is important to 
+    choose a reasonable lower bound for mass to filter out spurious bright 
+    features (salt), smaller than the PSF, but it is difficult know what this 
+    bound is a priori. So it is useful to sample a logarithmic range of 
+    candidate lower bounds and choose a proper minimum mass based on visual 
     inspection.
     
     Parameters
@@ -226,6 +226,36 @@ def get_min_masses(mip, dx, n=6, b=5):
     min_masses = np.logspace(np.log10(min_mass_0/b),
                              np.log10(min_mass_0*b), n)
     return min_masses
+
+
+def get_max_masses(mip, min_mass, n=6, b=5):
+    """Infer range of candidate maximum masses.
+
+    Follows from `get_min_masses`, but for (surprise!) maximum mass filtering.
+    Ranges from (min_mass, b*min_mass)
+
+    Parameters
+    ----------
+    mip : array-like
+        2D maximum intensity projection
+    min_mass : scalar
+        Minimum mass
+    n : scalar (optional)
+        Number of candidate maximum masses to return
+        Default : 6
+    b : scalar (optional)
+        Scaling factor to broaden or shrink the range of masses
+        Default : 5
+
+    Returns
+    -------
+    max_masses : array-like
+        1D array of candidate maximum masses (length n)
+    """
+    # Set logarithmic range of candidate maximum masses
+    max_masses = np.logspace(np.log10(min_mass),
+                             np.log10(min_mass*b), n)
+    return max_masses
 
 
 def remove_overlapping_features(features, wx, wy):
@@ -274,8 +304,8 @@ def remove_overlapping_features(features, wx, wy):
 
 
 def extract_psfs(stack, features, shape):
-    """Extract the PSF (aka subvolume) from each detected feature
-    while simultaneously filtering out edge features
+    """Extract the PSF (aka subvolume) from each detected feature while 
+    simultaneously filtering out edge features
 
     Parameters
     ----------
