@@ -183,7 +183,7 @@ def plot_mass_range(mip, dx, dy=None, masses=None, filtering='min',
 
 
 def plot_mass_range_interactive(mip, mass, df_features, filtering='min'):
-    """Interactive plot to determine minimum masses
+    """Interactive plot to determine minimum or maxmimum mass threshold
 
     Parameters
     ----------
