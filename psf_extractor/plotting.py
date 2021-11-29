@@ -28,7 +28,7 @@ __all__ = ['plot_mip',
 fire = get_Daans_special_cmap()
 
 
-def plot_mip(mip, dx=None, dy=None, df_features=None):
+def plot_mip(mip, dx=None, dy=None, features=None):
     """Plot the maximum intensity projection
 
     Parameters
@@ -37,7 +37,7 @@ def plot_mip(mip, dx=None, dy=None, df_features=None):
         2D max intensity projection
     dx, dy : scalars
         Diameters in x and y
-    df_features : `pd.DataFrame`
+    features : `pd.DataFrame`
         DataFrame of features returned by `trackpy.locate`
     """
     # Round diameters up to nearest odd integer (as per `trackpy` instructions)
@@ -46,9 +46,9 @@ def plot_mip(mip, dx=None, dy=None, df_features=None):
         dy = int(np.ceil(dx)//2*2 + 1) if dy is None else \
              int(np.ceil(dy)//2*2 + 1)
     # Locate features if not provided (but feature diameters are)
-    if (dx is not None) and (df_features is None):
+    if (dx is not None) and (features is None):
         # Locate features
-        df_features = trackpy.locate(mip, diameter=[dy, dx]).reset_index(drop=True)
+        features = trackpy.locate(mip, diameter=[dy, dx]).reset_index(drop=True)
 
     # Enhance contrast in MIP (by taking the log)
     s = 1/mip[mip!=0].min()  # scaling factor (such that log(min) = 0
@@ -61,10 +61,10 @@ def plot_mip(mip, dx=None, dy=None, df_features=None):
     # Plot MIP
     im = ax.imshow(mip_log, cmap=fire)
     # Plot features (if possible)
-    if df_features is not None:
-        ax.plot(df_features['x'], df_features['y'], ls='', color='#00ff00',
+    if features is not None:
+        ax.plot(features['x'], features['y'], ls='', color='#00ff00',
                 marker='o', ms=15, mfc='none', mew=1)
-        title = f'Features Detected: {len(df_features):.0f}'
+        title = f'Features Detected: {len(features):.0f}'
     else:
         title = 'Maximum Intensity Projection'
     ax.set_title(title)
@@ -103,7 +103,7 @@ def plot_mass_range(mip, dx, dy=None, masses=None, filtering='min',
     dx = int(np.ceil(dx)//2*2 + 1)
     dy = int(np.ceil(dx)//2*2 + 1) if dy is None else dy
     # Locate features
-    df_features = trackpy.locate(mip, diameter=[dy, dx]).reset_index(drop=True)
+    features = trackpy.locate(mip, diameter=[dy, dx]).reset_index(drop=True)
 
     # Enhance contrast in MIP (by taking the log)
     s = 1/mip[mip!=0].min()  # scaling factor (such that log(min) = 0
@@ -122,9 +122,9 @@ def plot_mass_range(mip, dx, dy=None, masses=None, filtering='min',
                         total=len(masses)):
         # Filter based on (raw) mass
         if filtering == 'min':
-            df = df_features.loc[df_features['raw_mass'] > mass]
+            df = features.loc[features['raw_mass'] > mass]
         elif filtering == 'max':
-            df = df_features.loc[df_features['raw_mass'] < mass]
+            df = features.loc[features['raw_mass'] < mass]
         else:
             raise ValueError("`filtering` must be one of 'min' or 'max'.")
 
@@ -138,7 +138,7 @@ def plot_mass_range(mip, dx, dy=None, masses=None, filtering='min',
         ax.set_title(title)
 
 
-def plot_mass_range_interactive(mip, mass, df_features, filtering='min'):
+def plot_mass_range_interactive(mip, mass, features, filtering='min'):
     """Interactive plot to determine minimum or maxmimum mass threshold
 
     Parameters
@@ -149,7 +149,7 @@ def plot_mass_range_interactive(mip, mass, df_features, filtering='min'):
         Mass used for filtering features from `trackpy.locate`. Mass refers to 
         the integrated brightness, which is apparently "a crucial parameter for 
         eliminating spurious features". See trackpy documentation for details.
-    df_features : `pd.DataFrame`
+    features : `pd.DataFrame`
         DataFrame of features returned by `trackpy.locate`
     """
     # Enhance contrast in MIP (by taking the log)
@@ -160,9 +160,9 @@ def plot_mass_range_interactive(mip, mass, df_features, filtering='min'):
 
     # Filter based on (raw) mass
     if filtering == 'min':
-        df = df_features.loc[df_features['raw_mass'] > mass]
+        df = features.loc[features['raw_mass'] > mass]
     elif filtering == 'max':
-        df = df_features.loc[df_features['raw_mass'] < mass]
+        df = features.loc[features['raw_mass'] < mass]
     else:
         raise ValueError("`filtering` must be one of 'min' or 'max'.")
 
