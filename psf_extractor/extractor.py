@@ -302,9 +302,10 @@ def remove_overlapping_features(features, wx, wy, return_indices=False):
             overlapping_features.append(i)
             overlapping_features.append(j)
 
-    features = features.drop(index=overlapping_features).reset_index(drop=True)
+    overlapping = np.unique(overlapping_features)
+    features = features.drop(index=overlapping)
     if return_indices:
-        return features, overlapping_features
+        return features, overlapping
     return features
 
 

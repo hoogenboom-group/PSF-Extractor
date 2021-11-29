@@ -19,6 +19,7 @@ else:
 __all__ = ['plot_mip',
            'plot_mass_range',
            'plot_mass_range_interactive',
+           'plot_overlapping_features',
            'plot_psf',
            'plot_psfs',
            'plot_psf_localizations']
@@ -174,6 +175,42 @@ def plot_mass_range_interactive(mip, mass, features, filtering='min'):
     title = f'Features Detected: {len(df):.0f}'
     ax.set_title(title)
     plt.show()
+
+
+from matplotlib.patches import Rectangle
+
+def plot_overlapping_features(mip, features, overlapping, width):
+    """Plot detected features from MIP for a range of masses
+
+    Parameters
+    ----------
+    mip : array-like
+        2D max intensity projection
+    features : `pd.DataFrame`
+        DataFrame of detected features
+    overlapping : array-like
+        1D list or array of indices corresponding to overlapping features
+    width : scalar
+        Width of bounding box
+    """
+    # Enhance contrast in MIP (by taking the log)
+    s = 1/mip[mip!=0].min()  # scaling factor (such that log(min) = 0
+    mip_log = np.log(s*mip,
+                     out=np.zeros_like(mip),
+                     where=mip!=0)  # avoid /b0 error
+
+    # Set up figure
+    fig, ax = plt.subplots(figsize=(6, 6))
+    # Plot MIP
+    ax.imshow(mip_log, cmap=fire)
+    # Plot bboxes of overlapping and nonoverlapping features
+    for i, feature in features.iterrows():
+        color = '#ff0000' if i in overlapping else '#00ff00'
+        p = Rectangle((feature['x']-width, feature['y']-width),
+                      2*width, 2*width, facecolor='none', lw=1, edgecolor=color)
+        ax.add_patch(p)
+    title = f'Overlapping features: {overlapping.size:.0f}'
+    ax.set_title(title)
 
 
 def plot_psf(psf, psx, psy, psz, crop=True):
