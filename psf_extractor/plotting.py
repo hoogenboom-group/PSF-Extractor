@@ -3,7 +3,7 @@ import trackpy
 from skimage import exposure
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
+from matplotlib.patches import Ellipse, Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from .extractor import get_mip, get_min_masses, crop_psf
@@ -177,8 +177,6 @@ def plot_mass_range_interactive(mip, mass, features, filtering='min'):
     plt.show()
 
 
-from matplotlib.patches import Rectangle
-
 def plot_overlapping_features(mip, features, overlapping, width):
     """Plot detected features from MIP for a range of masses
 
@@ -305,14 +303,13 @@ def plot_psfs(psfs):
     fig, axes = plt.subplots(ncols=ncols, nrows=nrows,
                              figsize=(4*ncols, 4*nrows))
     # Loop through PSFs
-    for i, psf in enumerate(psfs):
+    for i, psf in tqdm(enumerate(psfs), total=len(psfs)):
         ax = axes.flat[i]
         mip = np.max(psf, axis=0)
         ax.imshow(mip, cmap=fire)
         ax.set_title(f'PSF {i}')
     # Remove empty subplots
     [fig.delaxes(axes.flat[-i-1]) for i in range(ncols*nrows - len(psfs))]
-    return fig
 
 
 def plot_psf_localizations(df):
