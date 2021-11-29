@@ -1,4 +1,7 @@
-from ..extractor import load_stack
+import numpy as np
+
+from ..extractor import load_stack, get_min_masses
+from ..util import generate_image
 
 
 class TestStack:
@@ -58,6 +61,18 @@ class TestStack:
         stack = load_stack(file_pattern)
         # Known shape
         assert stack.shape == (23, 1749, 2034)
+
+
+class TestMassFiltering:
+
+    def test_min_mass(self):
+        # Create artificial fluorescence image
+        image = generate_image(nx=300, ny=300, N_features=20, seed=37)
+        min_masses = get_min_masses(image, dx=9)
+        np.testing.assert_allclose(min_masses, [ 12.21489226,  23.25292776,
+                                                 44.26552752,  84.26624581,
+                                                 160.41377073, 305.37230648],
+                                                 rtol=1e-07, atol=0)
 
 
 class TestFeatures:
