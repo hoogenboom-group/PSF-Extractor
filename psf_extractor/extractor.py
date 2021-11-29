@@ -6,7 +6,6 @@ from itertools import combinations
 
 import numpy as np
 import pandas as pd
-from skimage import img_as_uint
 from skimage import io, exposure
 
 from .util import natural_sort, bboxes_overlap, is_notebook
@@ -145,17 +144,17 @@ def get_mip(stack, axis=0, normalize=True, log=False, clip_pct=0):
     ----------
     stack : array-like
         3D image stack
-    axis : int
+    axis : int (optional)
         Axis along which to compute the projection
         0 --> z, 1 --> y, 2 --> x
         Default : 0 (z)
-    normalize : bool
+    normalize : bool (optional)
         Whether to normalize the projection, also scales by 255
         Default : True
-    log : bool
+    log : bool (optional)
         Whether to take the natural log
         Default : False
-    clip_pct : scalar
+    clip_pct : scalar (optional)
         % by which to clip the intensity
 
     Returns
@@ -181,8 +180,56 @@ def get_mip(stack, axis=0, normalize=True, log=False, clip_pct=0):
     return mip
 
 
+def get_min_masses(mip, dx, n=6, b=5):
+    """Infer range of candidate minimum masses.
+
+    Features returned by `trackpy.locate` are filtered by mass (essentially
+    a feature's total integrated brightness/intensity). It is important to
+    choose a reasonable lower bound for mass to filter out spurious bright
+    features (salt), smaller than the PSF, but it is difficult know what this
+    bound is a priori. So it is useful to sample a logarithmic range of
+    candidate lower bounds and choose a proper minimum mass based on visual
+    inspection.
+    
+    Parameters
+    ----------
+    mip : array-like
+        2D maximum intensity projection
+    dx : scalar
+        Expected feature diameter
+        A decent estimate is half the emissision wavelength divided by the NA
+            dx ~ λ/(2×NA)
+    n : scalar (optional)
+        Number of candidate minimum masses to return
+        Default : 6
+    b : scalar (optional)
+        Scaling factor to broaden or shrink the range of masses
+        Default : 5
+
+    Returns
+    -------
+    min_masses : array-like
+        1D array of candidate minimum masses (length n)
+
+    Examples
+    --------
+    >>> image = generate_image(nx=300, ny=300, N_features=20, seed=37)
+    >>> get_min_masses(image, dx=9)
+        array([ 12.21489226,  23.25292776, 44.26552752,
+                84.26624581, 160.41377073, 305.37230648])
+    """
+    # Estimate peak intensity of a typical *single* PSF
+    peak = np.percentile(mip, 99.9)
+    # "Integrate" intensity over a typical PSF
+    min_mass_0 = np.pi * (dx/2)**2 * peak
+    # Set logarithmic range of candidate minimum masses
+    min_masses = np.logspace(np.log10(min_mass_0/b),
+                             np.log10(min_mass_0*b), n)
+    return min_masses
+
+
 def remove_overlapping_features(features, wx, wy):
-    """Remove overlapping features from feature set
+    """Remove overlapping features from feature set.
 
     Parameters
     ----------
