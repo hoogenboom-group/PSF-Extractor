@@ -139,7 +139,7 @@ def load_stack(file_pattern):
 
 
 def get_mip(stack, axis=0, normalize=True, log=False, clip_pct=0):
-    """Compute the maximum intensity projection along the given axis
+    """Compute the maximum intensity projection along the given axis.
 
     Parameters
     ----------
@@ -310,7 +310,7 @@ def remove_overlapping_features(features, wx, wy, return_indices=False):
 
 def extract_psfs(stack, features, shape):
     """Extract the PSF (aka subvolume) from each detected feature while 
-    simultaneously filtering out edge features
+    simultaneously filtering out edge features.
 
     Parameters
     ----------
@@ -389,7 +389,7 @@ def extract_psfs(stack, features, shape):
 
 
 def align_psfs(psfs, locations, upsample_factor=2):
-    """Upsample, align, and sum PSFs
+    """Upsample, align, and sum PSFs.
 
     Parameters
     ----------
@@ -435,7 +435,7 @@ def align_psfs(psfs, locations, upsample_factor=2):
 
 
 def crop_psf(psf):
-    """Crop an individual PSF"""
+    """Crop an individual PSF."""
     # Get dimensions
     Nz, Ny, Nx = psf.shape
     Nmin = np.min([Nz, Ny, Nx])
