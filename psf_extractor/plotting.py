@@ -22,7 +22,8 @@ __all__ = ['plot_mip',
            'plot_overlapping_features',
            'plot_psf',
            'plot_psfs',
-           'plot_psf_localizations']
+           'plot_psf_localizations',
+           'plot_pcc_distribution']
 
 
 # No-brainer global variable
@@ -207,7 +208,7 @@ def plot_overlapping_features(mip, features, overlapping, width):
         p = Rectangle((feature['x']-width, feature['y']-width),
                       2*width, 2*width, facecolor='none', lw=1, edgecolor=color)
         ax.add_patch(p)
-    title = f'Overlapping features: {overlapping.size:.0f}'
+    title = f'Overlapping features: {overlapping.size:.0f}/{len(features):.0f}'
     ax.set_title(title)
 
 
@@ -382,3 +383,23 @@ def plot_psf_localizations(df):
         ax.set_aspect('equal')
         ax.grid(ls=':')
     fig.delaxes(axes[1,1])
+
+
+def plot_pcc_distribution(pccs, pcc_min=0.9, bins=None):
+    """Plot distribution of PCCs of the extracted PSFs."""
+    # Get distribution
+    bins = pccs.size if bins is None else bins
+    hist, bins = np.histogram(pccs, bins=bins)
+    bins = (bins[1:] + bins[:-1]) / 2  # center bins
+
+    # Plot distribution
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.plot(bins, hist)
+    ax.fill_between(bins, 0, hist, alpha=0.3)
+    # Plot outlier range
+    ax.axvline(pcc_min, ymax=1, color='k', ls='--')
+    # Aesthetics
+    ax.set_xlabel('PCC [AU]')
+    ax.set_ylabel('Freq')
+    ax.set_title('Distribution of PCCs')
+    ax.grid(ls=':')
