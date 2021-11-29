@@ -118,8 +118,9 @@ def plot_features(stack, dx, dy, min_mass=500, axis=0):
     ax.set_title(title)
 
 
-def plot_min_masses(mip, dx, dy=None, min_masses=None, **min_mass_kwargs):
-    """Plot detected features from MIP for a range of minimum masses
+def plot_mass_range(mip, dx, dy=None, masses=None, filtering='min',
+                    **min_mass_kwargs):
+    """Plot detected features from MIP for a range of masses
 
     Parameters
     ----------
@@ -127,18 +128,20 @@ def plot_min_masses(mip, dx, dy=None, min_masses=None, **min_mass_kwargs):
         2D max intensity projection
     dx, dy : int
         Diameters in x and y
-    min_masses : array-like
-        1D list or array of candidate minimum masses used for filtering
-        features from `trackpy.locate`. Minimum mass refers to the
-        minimum integrated brightness, which is apparently "a crucial
-        parameter for eliminating spurious features. See trackpy
-        documentation for more details.
+    masses : array-like
+        1D list or array of masses used for filtering features from 
+        `trackpy.locate`. Mass refers to the integrated brightness, which is 
+        apparently "a crucial parameter for eliminating spurious features. 
+        See trackpy documentation for details.
+    filtering : str
+        Whether to do min filtering or max filtering
+        Default : 'min'
     min_mass_kwargs : dict
         Keyword arguments passed to `extractor.get_min_masses`
     """
     # Set candidate minimum masses if not provided
-    if min_masses is None:
-        min_masses = get_min_masses(mip, dx, **min_mass_kwargs)
+    if masses is None:
+        masses = get_min_masses(mip, dx, **min_mass_kwargs)
 
     # Round diameters up to nearest odd integer (as per `trackpy` instructions)
     dx = int(np.ceil(dx)//2*2 + 1)
@@ -154,15 +157,18 @@ def plot_min_masses(mip, dx, dy=None, min_masses=None, **min_mass_kwargs):
 
     # Set up figure
     ncols = 3
-    nrows = int(np.ceil(len(min_masses) / ncols))
+    nrows = int(np.ceil(len(masses) / ncols))
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols,
                              figsize=(6*ncols, 6*nrows))
 
     # Loop through candidate minimum masses
-    for i, min_mass in tqdm(enumerate(min_masses),
-                            total=len(min_masses)):
-        # Filter based on mass
-        df = df_features.loc[df_features['raw_mass'] > min_mass]
+    for i, mass in tqdm(enumerate(masses),
+                        total=len(masses)):
+        # Filter based on (raw) mass
+        if filtering == 'min':
+            df = df_features.loc[df_features['raw_mass'] > mass]
+        else:
+            df = df_features.loc[df_features['raw_mass'] < mass]
 
         # Plot max projection image
         ax = axes.flat[i]
@@ -170,19 +176,21 @@ def plot_min_masses(mip, dx, dy=None, min_masses=None, **min_mass_kwargs):
         # Plot detected features
         ax.plot(df['x'], df['y'], ls='', color='#00ff00',
                 marker='o', ms=15, mfc='none', mew=1)
-        title = f'Min Mass: {min_mass:.1f} | Features Detected: {len(df):.0f}'
+        title = f'Mass: {mass:.1f} | Features Detected: {len(df):.0f}'
         ax.set_title(title)
 
 
-def plot_min_masses_interactive(mip, min_mass, df_features):
+def plot_mass_range_interactive(mip, mass, df_features, filtering='min'):
     """Interactive plot to determine minimum masses
 
     Parameters
     ----------
     mip : array-like
         2D max intensity projection
-    min_mass : scalar
-        Minimum mass used for filtering features from `trackpy.locate`
+    mass : scalar
+        Mass used for filtering features from `trackpy.locate`. Mass refers to 
+        the integrated brightness, which is apparently "a crucial parameter for 
+        eliminating spurious features. See trackpy documentation for details.
     df_features : `pd.DataFrame`
         DataFrame of features returned by `trackpy.locate`
     """
@@ -195,8 +203,11 @@ def plot_min_masses_interactive(mip, min_mass, df_features):
     # Set up figure
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.imshow(mip_log, cmap=fire)  # plot MIP
-    # Filter based on mass
-    df = df_features.loc[df_features['raw_mass'] > min_mass]
+    # Filter based on (raw) mass
+    if filtering == 'min':
+        df = df_features.loc[df_features['raw_mass'] > mass]
+    else:
+        df = df_features.loc[df_features['raw_mass'] < mass]
     ax.plot(df['x'], df['y'], ls='', color='#00ff00',
             marker='o', ms=15, mfc='none', mew=1)
     title = f'Features Detected: {len(df):.0f}'
