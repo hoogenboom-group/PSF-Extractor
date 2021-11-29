@@ -1,4 +1,6 @@
 import re
+import numpy as np
+from scipy.ndimage import gaussian_filter
 from matplotlib.colors import ListedColormap
 
 
@@ -62,8 +64,37 @@ def bboxes_overlap(bbox_1, bbox_2):
     return overlap
 
 
+def generate_image(nx, ny, N_features=500, seed=None):
+    """Generate a random image with Gaussian blobs and shape (nx, ny)"""
+    # Create features (Gaussian blobs)
+    y, x = np.indices((nx, ny))
+    x = np.repeat(x[:, :, np.newaxis], N_features, axis=2)
+    y = np.repeat(y[:, :, np.newaxis], N_features, axis=2)
+    sigma = np.random.RandomState(seed).uniform(nx/100, nx/50, N_features)
+    dx = x - np.random.RandomState(seed+1).uniform(0, nx, N_features)
+    dy = y - np.random.RandomState(seed+2).uniform(0, ny, N_features)
+    blobs = np.exp(-(dx**2 + dy**2)/(2*sigma**2))
+    image = np.sum(blobs, axis=2)
+
+    # Return normalized image
+    image /= image.max()
+    return image
+
+
+def white_noise(variance, shape, seed=None):
+    """Generate white noise"""
+    return np.random.RandomState(seed).normal(0, np.sqrt(variance), shape)
+
+
+def nonwhite_noise(variance, shape, seed=None):
+    """Generate non-white (correlated) noise"""
+    white = np.random.RandomState(seed).normal(0, 1, shape)
+    correlated = gaussian_filter(white, .4)
+    return np.sqrt(variance/correlated.var()) * correlated
+
+
 def is_notebook():
-    """Attempts to determines whether code is being exectued in a notebook or not
+    """Determines whether code is being exectued in a notebook or not
     
     References
     ----------
