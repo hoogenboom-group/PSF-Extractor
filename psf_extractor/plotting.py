@@ -135,14 +135,13 @@ def plot_min_masses(mip, dx, dy=None, min_masses=None, **min_mass_kwargs):
     min_mass_kwargs : dict
         Keyword arguments passed to `extractor.get_min_masses`
     """
-    # Round diameters up to nearest odd integer (as per `trackpy` instructions)
-    dx = int(np.ceil(dx)//2*2 + 1)
-    dy = int(np.ceil(dx)//2*2 + 1) if dy is None else dy
-
     # Set candidate minimum masses if not provided
     if min_masses is None:
         min_masses = get_min_masses(mip, dx, **min_mass_kwargs)
 
+    # Round diameters up to nearest odd integer (as per `trackpy` instructions)
+    dx = int(np.ceil(dx)//2*2 + 1)
+    dy = int(np.ceil(dx)//2*2 + 1) if dy is None else dy
     # Locate features
     df_features = trackpy.locate(mip, diameter=[dy, dx]).reset_index(drop=True)
 

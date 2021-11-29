@@ -6,6 +6,9 @@ from matplotlib.colors import ListedColormap
 
 __all__ = ['natural_sort',
            'bboxes_overlap',
+           'generate_image',
+           'white_noise',
+           'nonwhite_noise',
            'is_notebook',
            'get_Daans_special_cmap']
 
