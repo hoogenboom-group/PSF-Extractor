@@ -28,94 +28,51 @@ __all__ = ['plot_mip',
 # No-brainer global variable
 fire = get_Daans_special_cmap()
 
-# TODO: rearrange and separate trackpy.locate from plotting
 
-def plot_mip(mip, axis=0, normalize=True, log=True, clip_pct=0):
+def plot_mip(mip, dx=None, dy=None, df_features=None):
     """Plot the maximum intensity projection
 
     Parameters
     ----------
     mip : array-like
         2D max intensity projection
-    axis : int (optional)
-        Axis along which to compute the projection
-        0 --> z, 1 --> y, 2 --> x
-        Default : 0 (z)
-    normalize : bool (optional)
-        Whether to normalize the projection, also scales by 255
-        Default : True
-    log : bool (optional)
-        Whether to take the natural log
-        Default : False
-    clip_pct : scalar (optional)
-        % by which to clip the intensity
-        Default: 0
+    dx, dy : scalars
+        Diameters in x and y
+    df_features : `pd.DataFrame`
+        DataFrame of features returned by `trackpy.locate`
     """
-    # Take natural log
-    if log:
-        # Scaling factor (such that log(min) = 0
-        s = 1/mip[mip!=0].min()
-        # Funky out + where arguments to avoid /b0 error
-        mip = np.log(s*mip,
-                     out=np.zeros_like(mip),
-                     where=mip!=0)
-    # Normalize (rescale) the maximum intensity projection
-    if normalize or log or clip_pct:  # automatically rescale if taking
-                                      # the log or if `clip_pct` provided
-        p1, p2 = np.percentile(mip, (clip_pct, 100-clip_pct))
-        mip = exposure.rescale_intensity(mip, in_range=(p1, p2), out_range=(0, 1))
+    # Round diameters up to nearest odd integer (as per `trackpy` instructions)
+    if dx is not None:
+        dx = int(np.ceil(dx)//2*2 + 1)
+        dy = int(np.ceil(dx)//2*2 + 1) if dy is None else \
+             int(np.ceil(dy)//2*2 + 1)
+    # Locate features if not provided (but feature diameters are)
+    if (dx is not None) and (df_features is None):
+        # Locate features
+        df_features = trackpy.locate(mip, diameter=[dy, dx]).reset_index(drop=True)
 
-    # Create figure
-    fig, ax = plt.subplots(figsize=(7, 7))
-    im = ax.imshow(mip, cmap=fire)
-    ax.set_title('Maximum intensity projection of image stack')
+    # Enhance contrast in MIP (by taking the log)
+    s = 1/mip[mip!=0].min()  # scaling factor (such that log(min) = 0
+    mip_log = np.log(s*mip,
+                     out=np.zeros_like(mip),
+                     where=mip!=0)  # avoid /b0 error
+
+    # Set up figure
+    fig, ax = plt.subplots(figsize=(6, 6))
+    # Plot MIP
+    im = ax.imshow(mip_log, cmap=fire)
+    # Plot features (if possible)
+    if df_features is not None:
+        ax.plot(df_features['x'], df_features['y'], ls='', color='#00ff00',
+                marker='o', ms=15, mfc='none', mew=1)
+        title = f'Features Detected: {len(df_features):.0f}'
+    else:
+        title = 'Maximum Intensity Projection'
+    ax.set_title(title)
     # Colorbar
     div = make_axes_locatable(ax)
     cax = div.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im, cax=cax)
-
-
-def plot_features(stack, dx, dy, min_mass=500, axis=0):
-    """Detect features from maximum intensity projection and overlay them
-
-    Parameters
-    ----------
-    stack : array-like
-        3D image stack
-    dx, dy : int
-        Diameters in x and y
-    min_mass : scalar, [default = 500]
-        Minimum mass that gets passed to `trackpy.locate`.
-        Minimum mass refers to the minimum integrated brightness, which
-        is apparently "a crucial parameter for eliminating spurious
-        features. See trackpy documentation for more details.
-    axis : scalar, [default = 0]
-        Axis along which to take maximum intensity projection
-    """
-    # Get maximum intensity projection
-    mip = get_mip(stack, axis=axis, normalize=True)
-
-    # Round diameters up to nearest odd integer (as per `trackpy` instructions)
-    dx = int(np.ceil(dx)//2*2 + 1)
-    dy = int(np.ceil(dy)//2*2 + 1)
-    # Locate features
-    df_features = trackpy.locate(mip,
-                                 diameter=(dx, dy),
-                                 minmass=min_mass).reset_index(drop=True)
-
-    # Create figure
-    fig, ax = plt.subplots(figsize=(7, 7))
-    # Take log to enhance contrast (avoiding /b0 error)
-    mip_log = np.log(mip,
-                     out=np.zeros_like(mip),
-                     where=mip!=0)
-    # Plot max projection image
-    ax.imshow(mip_log, cmap=fire)
-    # Plot detected features
-    ax.plot(df_features['x'], df_features['y'], ls='', color='#00ff00',
-            marker='o', ms=15, mfc='none', mew=1)
-    title = f'Min Mass: {min_mass} | Features Detected: {len(df_features):.0f}'
-    ax.set_title(title)
 
 
 def plot_mass_range(mip, dx, dy=None, masses=None, filtering='min',
@@ -131,7 +88,7 @@ def plot_mass_range(mip, dx, dy=None, masses=None, filtering='min',
     masses : array-like
         1D list or array of masses used for filtering features from 
         `trackpy.locate`. Mass refers to the integrated brightness, which is 
-        apparently "a crucial parameter for eliminating spurious features. 
+        apparently "a crucial parameter for eliminating spurious features". 
         See trackpy documentation for details.
     filtering : str
         Whether to do min filtering or max filtering
@@ -192,7 +149,7 @@ def plot_mass_range_interactive(mip, mass, df_features, filtering='min'):
     mass : scalar
         Mass used for filtering features from `trackpy.locate`. Mass refers to 
         the integrated brightness, which is apparently "a crucial parameter for 
-        eliminating spurious features. See trackpy documentation for details.
+        eliminating spurious features". See trackpy documentation for details.
     df_features : `pd.DataFrame`
         DataFrame of features returned by `trackpy.locate`
     """
