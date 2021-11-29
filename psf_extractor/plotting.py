@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from .extractor import get_mip, crop_psf
+from .extractor import get_mip, get_min_masses, crop_psf
 from .gauss import gaussian_1D, fit_gaussian_1D
 from .util import get_Daans_special_cmap, is_notebook
 
@@ -117,61 +117,60 @@ def plot_features(stack, dx, dy, min_mass=500, axis=0):
     ax.set_title(title)
 
 
-def plot_min_masses(stack, dx, dy, min_masses=None, axis=0):
+def plot_min_masses(mip, dx, dy=None, min_masses=None, **min_mass_kwargs):
     """Plot detected features from MIP for a range of minimum masses
 
     Parameters
     ----------
-    stack : array-like
-        3D image stack
+    mip : array-like
+        2D max intensity projection
     dx, dy : int
         Diameters in x and y
-    min_masses : list
-        Set of candidate masses that gets passed to `trackpy.locate`.
-        Minimum mass refers to the minimum integrated brightness, which
-        is apparently "a crucial parameter for eliminating spurious
-        features. See trackpy documentation for more details.
-        Defaults to [50, 100, 200, 500, 1000, 2000]
-    axis : scalar, [default = 0]
-        Axis along which to take maximum intensity projection
+    min_masses : array-like
+        1D list or array of candidate minimum masses used for filtering
+        features from `trackpy.locate`. Minimum mass refers to the
+        minimum integrated brightness, which is apparently "a crucial
+        parameter for eliminating spurious features. See trackpy
+        documentation for more details.
+    min_mass_kwargs : dict
+        Keyword arguments passed to `extractor.get_min_masses`
     """
     # Round diameters up to nearest odd integer (as per `trackpy` instructions)
     dx = int(np.ceil(dx)//2*2 + 1)
-    dy = int(np.ceil(dy)//2*2 + 1)
+    dy = int(np.ceil(dx)//2*2 + 1) if dy is None else dy
 
     # Set candidate minimum masses if not provided
     if min_masses is None:
-        min_masses = [50, 100, 200, 500, 1000, 2000]
+        min_masses = get_min_masses(mip, dx, **min_mass_kwargs)
 
-    # Get maximum intensity projection in given axis
-    mip = get_mip(stack, axis=axis, normalize=True, log=True)
+    # Locate features
+    df_features = trackpy.locate(mip, diameter=[dy, dx]).reset_index(drop=True)
+
+    # Enhance contrast in MIP (by taking the log)
+    s = 1/mip[mip!=0].min()  # scaling factor (such that log(min) = 0
+    mip_log = np.log(s*mip,
+                     out=np.zeros_like(mip),
+                     where=mip!=0)  # avoid /b0 error
 
     # Set up figure
     ncols = 3
     nrows = int(np.ceil(len(min_masses) / ncols))
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols,
-                             figsize=(4*ncols, 4*nrows))
+                             figsize=(6*ncols, 6*nrows))
 
     # Loop through candidate minimum masses
     for i, min_mass in tqdm(enumerate(min_masses),
                             total=len(min_masses)):
-
-        # Locate features
-        df_features = trackpy.locate(255*mip,  # expects 8bit input (?)
-                                     diameter=[dy, dx],  # expects row, col order
-                                     minmass=min_mass).reset_index(drop=True)
+        # Filter based on mass
+        df = df_features.loc[df_features['raw_mass'] > min_mass]
 
         # Plot max projection image
         ax = axes.flat[i]
-        # # Take log to enhance contrast (avoiding /b0 error)
-        # mip_log = np.log(mip,
-        #                  out=np.zeros_like(mip),
-        #                  where=mip!=0)
-        ax.imshow(mip, cmap=fire)
+        ax.imshow(mip_log, cmap=fire)
         # Plot detected features
-        ax.plot(df_features['x'], df_features['y'], ls='', color='#00ff00',
+        ax.plot(df['x'], df['y'], ls='', color='#00ff00',
                 marker='o', ms=15, mfc='none', mew=1)
-        title = f'Min Mass: {min_mass} | Features Detected: {len(df_features):.0f}'
+        title = f'Min Mass: {min_mass:.1f} | Features Detected: {len(df):.0f}'
         ax.set_title(title)
 
 
