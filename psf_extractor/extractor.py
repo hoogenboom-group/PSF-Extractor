@@ -259,7 +259,7 @@ def get_max_masses(min_mass, n=6, b=5):
     return max_masses
 
 
-def remove_overlapping_features(features, wx, wy):
+def remove_overlapping_features(features, wx, wy, return_indices=False):
     """Remove overlapping features from feature set.
 
     Parameters
@@ -268,6 +268,8 @@ def remove_overlapping_features(features, wx, wy):
         Feature set returned from `trackpy.locate`
     wx, wy : scalar
         Dimensions of bounding boxes
+    return_indices : bool
+        Whether to return the indices of the overlapping features
 
     Returns
     -------
@@ -280,10 +282,10 @@ def remove_overlapping_features(features, wx, wy):
     
     # Create a bounding box for each bead
     df_bboxes = features.loc[:, ['x', 'y']]
-    df_bboxes['x_min'] = features['x'] - wx/2
-    df_bboxes['y_min'] = features['y'] - wy/2
-    df_bboxes['x_max'] = features['x'] + wx/2
-    df_bboxes['y_max'] = features['y'] + wy/2
+    df_bboxes['x_min'] = features['x'] - wx
+    df_bboxes['y_min'] = features['y'] - wy
+    df_bboxes['x_max'] = features['x'] + wx
+    df_bboxes['y_max'] = features['y'] + wy
 
     # Collect overlapping features
     overlapping_features = []
@@ -301,6 +303,8 @@ def remove_overlapping_features(features, wx, wy):
             overlapping_features.append(j)
 
     features = features.drop(index=overlapping_features).reset_index(drop=True)
+    if return_indices:
+        return features, overlapping_features
     return features
 
 
