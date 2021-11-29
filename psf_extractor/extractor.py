@@ -5,6 +5,7 @@ import logging
 from itertools import combinations
 
 import numpy as np
+from scipy.stats import pearsonr
 import pandas as pd
 from skimage import io, exposure
 
@@ -385,8 +386,53 @@ def extract_psfs(stack, features, shape):
 
     # Filter out edge features
     features = features.drop(edge_features).reset_index(drop=True)
-
     return psfs, features
+
+
+def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False):
+    """Detect outlier PSFs based on the Pearson correlation coefficient (PCC).
+
+    Parameters
+    ----------
+    psfs : list
+        List of PSFs
+    pcc_min : scalar
+        PCC threshold to determine suspicious (potential outlier) PSFs
+
+    Returns
+    -------
+    outliers : list
+        Indices of detected outlier PSFs
+    """
+    # Collect PCCs
+    pccs = []
+    # Iterate through every (unique) pair of PSFs
+    ij = list(combinations(range(len(psfs)), 2))
+    for i, j in tqdm(ij, total=len(ij)):
+
+        # Get pairs of PSFs
+        mip_i = np.max(psfs[i], axis=0)
+        mip_j = np.max(psfs[j], axis=0)
+        # Calculate PCC of maximum intensity projections
+        pcc, _ = pearsonr(mip_i.ravel(),
+                          mip_j.ravel())
+        pccs.append(pcc)
+
+    # Convert to array
+    pccs = np.array(pccs)
+
+    # Get indices of candidate outliers
+    suspects_i = np.argwhere(pccs < pcc_min)
+    # Convert to indices of PSF pairs
+    suspects_ij = np.array(ij)[suspects_i[:, 0]]
+
+    # Determine frequency of out lying (?)
+    i, counts = np.unique(suspects_ij, return_counts=True)
+    outliers = i[counts > 3*counts.mean()]
+
+    if return_pccs:
+        return outliers, pccs
+    return outliers
 
 
 def align_psfs(psfs, locations, upsample_factor=2):
