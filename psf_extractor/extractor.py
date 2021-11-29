@@ -40,11 +40,13 @@ __all__ = ['load_stack',
            'get_max_masses',
            'remove_overlapping_features',
            'extract_psfs',
+           'detect_outlier_psfs',
            'align_psfs',
            'crop_psf',
            'fit_features_in_stack',
            'get_theta']
 
+# TODO: LOGGING
 
 def load_stack(file_pattern):
     """Loads image stack into dask array allowing manipulation
