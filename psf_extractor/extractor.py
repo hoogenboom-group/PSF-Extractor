@@ -138,17 +138,13 @@ def load_stack(file_pattern):
     return stack
 
 
-def get_mip(stack, axis=0, normalize=True, log=False, clip_pct=0):
+def get_mip(stack, normalize=True, log=False, clip_pct=0, axis=0):
     """Compute the maximum intensity projection along the given axis.
 
     Parameters
     ----------
     stack : array-like
         3D image stack
-    axis : int (optional)
-        Axis along which to compute the projection
-        0 --> z, 1 --> y, 2 --> x
-        Default : 0 (z)
     normalize : bool (optional)
         Whether to normalize the projection, also scales by 255
         Default : True
@@ -157,6 +153,10 @@ def get_mip(stack, axis=0, normalize=True, log=False, clip_pct=0):
         Default : False
     clip_pct : scalar (optional)
         % by which to clip the intensity
+    axis : int (optional)
+        Axis along which to compute the projection
+        0 --> z, 1 --> y, 2 --> x
+        Default : 0 (z)
 
     Returns
     -------
@@ -316,11 +316,11 @@ def extract_psfs(stack, features, shape):
     Parameters
     ----------
     stack : array-like
-        Image stack of shape (3, M, N)
+        3D image stack
     features : `pd.DataFrame`
         DataFrame of detected features
     shape : array-like or 3-tuple
-        The volume of the PSF to be extracted (wz, wy, wx)
+        The dimensions of the PSF to be extracted (wz, wy, wx)
 
     Returns
     -------
