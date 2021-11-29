@@ -173,6 +173,36 @@ def plot_min_masses(mip, dx, dy=None, min_masses=None, **min_mass_kwargs):
         ax.set_title(title)
 
 
+def plot_min_masses_interactive(mip, min_mass, df_features):
+    """Interactive plot to determine minimum masses
+
+    Parameters
+    ----------
+    mip : array-like
+        2D max intensity projection
+    min_mass : scalar
+        Minimum mass used for filtering features from `trackpy.locate`
+    df_features : `pd.DataFrame`
+        DataFrame of features returned by `trackpy.locate`
+    """
+    # Enhance contrast in MIP (by taking the log)
+    s = 1/mip[mip!=0].min()  # scaling factor (such that log(min) = 0
+    mip_log = np.log(s*mip,
+                     out=np.zeros_like(mip),
+                     where=mip!=0)  # avoid /b0 error
+
+    # Set up figure
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.imshow(mip_log, cmap=fire)  # plot MIP
+    # Filter based on mass
+    df = df_features.loc[df_features['raw_mass'] > min_mass]
+    ax.plot(df['x'], df['y'], ls='', color='#00ff00',
+            marker='o', ms=15, mfc='none', mew=1)
+    title = f'Features Detected: {len(df):.0f}'
+    ax.set_title(title)
+    plt.show()
+
+
 def plot_psf(psf, psx, psy, psz, crop=True):
     """"""
 
