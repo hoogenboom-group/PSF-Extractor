@@ -229,7 +229,7 @@ def get_min_masses(mip, dx, n=6, b=5):
     return min_masses
 
 
-def get_max_masses(mip, min_mass, n=6, b=5):
+def get_max_masses(min_mass, n=6, b=5):
     """Infer range of candidate maximum masses.
 
     Follows from `get_min_masses`, but for (surprise!) maximum mass filtering.
