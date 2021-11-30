@@ -525,11 +525,11 @@ def fit_features_in_stack(stack, features, width=None, theta=None):
     ...
     """
     stack = np.array(stack)
-    
+
     df_cols = ["x", "y", "sx", "sy", "A", "B"]
-    if not theta is None: df_cols.insert(4, "t")
+    if theta is not None: df_cols.insert(4, "t")
     if stack.ndim == 2: stack = [stack]
-    
+
     # define cutout for each feature
     if width is None:
         width = 10 * features['size'].mean()
@@ -541,9 +541,9 @@ def fit_features_in_stack(stack, features, width=None, theta=None):
 
     fit_results = []
     # iterate through stack
-    for i, zslice in enumerate(stack):
+    for i, zslice in tqdm(enumerate(stack), total=len(stack)):
         fit_results.append([])
-        logging.info(f"Fitting slice ({i+1}/{len(stack)})")
+        logging.debug(f"Fitting slice ({i+1}/{len(stack)})")
         # for each zslice and each bead fit feature with 2D Gauss
         for j, row in df_bboxes.iterrows():
             x1, x2, y1, y2 = [int(p) for p in [row.x_min, row.x_max, 
@@ -589,10 +589,10 @@ def get_theta(psf, fit_range=10):
     z = round(z)
 
     mip0, mip1 = get_mip(psf[z0:z]), get_mip(psf[z:z1])
-    
+
     popt0 = fit_gaussian_2D(mip0, theta=(0,360))
     popt1 = fit_gaussian_2D(mip1, theta=popt0[4], epsilon=10)
-    
+
     theta = np.mean([popt0[4], popt1[4]])
-    
+
     return theta
