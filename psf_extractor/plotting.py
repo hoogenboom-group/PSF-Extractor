@@ -225,72 +225,93 @@ def plot_psf(psf, psx, psy, psz, crop=True):
     ax_y = fig.add_subplot(gs[-2,3:])
     ax_x = fig.add_subplot(gs[-1,3:])
 
-    # Crippity crop crop
+    # Crippity crippity crop
     if crop:
         psf = crop_psf(psf)
 
     # PSF dimensions
     Nz, Ny, Nx = psf.shape
-    # PSF volume
-    dz, dy, dx = psz*Nz/1e3, psy*Ny/1e3, psx*Nx/1e3
+    # PSF volume [μm]
+    dz, dy, dx = 1e-3*psz*Nz, 1e-3*psy*Ny, 1e-3*psx*Nx
     # PSF center coords
     z0, y0, x0 = Nz//2, Ny//2, Nx//2
 
-    # Plot 2D PSFs (slices)
-    ax_xy.imshow(psf[z0,:,:], extent=[-dx/2, dx/2, -dy/2, dy/2], cmap=fire)
-    ax_yz.imshow(psf[:,y0,:], extent=[-dz/2, dz/2, -dy/2, dy/2], cmap=fire)
-    ax_xz.imshow(psf[:,:,x0], extent=[-dx/2, dx/2, -dz/2, dz/2], cmap=fire)
+    # --- 2D Plots ---
+    # Plot 2D PSFs
+    ax_xy.imshow(psf[z0,:,:], cmap=fire,
+                 extent=[-dx/2, dx/2, -dy/2, dy/2])
+    ax_yz.imshow(psf[:,y0,:], cmap=fire,
+                 extent=[-dz/2, dz/2, -dy/2, dy/2])
+    ax_xz.imshow(psf[:,:,x0], cmap=fire,
+                 extent=[-dx/2, dx/2, -dz/2, dz/2])
+
+    # --- 1D Plots ---
     # 1D PSFs (slices)
     prof_z = psf[:,y0,x0]
     prof_y = psf[z0,:,x0]
     prof_x = psf[z0,y0,:]
+    # 1D Axes
+    z = np.linspace(-dz/2, dz/2, prof_z.size)
+    y = np.linspace(-dy/2, dy/2, prof_y.size)
+    x = np.linspace(-dx/2, dx/2, prof_x.size)
     # Do 1D PSF fits
-    u = np.linspace(0, Nz, 10*Nz)
-    popt_z = fit_gaussian_1D(prof_z)
-    popt_y = fit_gaussian_1D(prof_y)
-    popt_x = fit_gaussian_1D(prof_x)
-    # Scale axes
-    x_prof_z = np.linspace(-dz/2, dz/2, prof_z.size)
-    x_prof_y = np.linspace(-dy/2, dy/2, prof_y.size)
-    x_prof_x = np.linspace(-dx/2, dx/2, prof_x.size)
-    x_uz = np.linspace(-dz/2, dz/2, u.size)
-    x_uy = np.linspace(-dy/2, dy/2, u.size)
-    x_ux = np.linspace(-dx/2, dx/2, u.size)
-
+    popt_z = fit_gaussian_1D(prof_z, z, p0=[0, 1, 1, 0])
+    popt_y = fit_gaussian_1D(prof_y, y, p0=[0, 1, 1, 0])
+    popt_x = fit_gaussian_1D(prof_x, x, p0=[0, 1, 1, 0])
     # Plot 1D PSFs
     plot_kwargs = {'ms': 5, 'marker': 'o', 'ls': '', 'alpha': 0.75}
-    ax_z.plot(x_prof_z, prof_z, c='C1', label='Z', **plot_kwargs)
-    ax_y.plot(x_prof_y, prof_y, c='C0', label='Y', **plot_kwargs)
-    ax_x.plot(x_prof_x, prof_x, c='C2', label='X', **plot_kwargs)
-
+    ax_z.plot(z, prof_z, c='C1', label='Z', **plot_kwargs)
+    ax_y.plot(y, prof_y, c='C0', label='Y', **plot_kwargs)
+    ax_x.plot(x, prof_x, c='C2', label='X', **plot_kwargs)
     # Plot 1D PSF fits
-    ax_z.plot(x_uz, gaussian_1D(u, *popt_z), 'k-',
-              label=f'{popt_z[1]:.2f}nm\nFWHM')
-    ax_y.plot(x_uy, gaussian_1D(u, *popt_y), 'k-',
-              label=f'{popt_y[1]:.2f}nm\nFWHM')
-    ax_x.plot(x_ux, gaussian_1D(u, *popt_x), 'k-',
-              label=f'{popt_x[1]:.2f}nm\nFWHM')
+    ax_z.plot(z, gaussian_1D(z, *popt_z), 'k-')
+    ax_y.plot(y, gaussian_1D(y, *popt_y), 'k-')
+    ax_x.plot(x, gaussian_1D(x, *popt_x), 'k-')
+
+    # --- FWHM arrows ---
+    # Z
+    x0 = popt_z[0]
+    y0 = (popt_z[2] - popt_z[3])/2
+    fwhm = 2.355 * popt_z[1]
+    ax_z.annotate('', xy=(x0-fwhm/2, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-|>'})
+    ax_z.text(x0, y0-3, f'{1e3*fwhm:.0f}nm', ha='center')
+    # Y
+    x0 = popt_y[0]
+    y0 = (popt_y[2] - popt_y[3])/2
+    fwhm = 2.355 * popt_y[1]
+    ax_y.annotate('', xy=(x0-fwhm/2, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-|>'})
+    ax_y.text(x0, y0-3, f'{1e3*fwhm:.0f}nm', ha='center')
+    # X
+    x0 = popt_x[0]
+    y0 = (popt_x[2] - popt_x[3])/2
+    fwhm = 2.355 * popt_x[1]
+    ax_x.annotate('', xy=(x0-fwhm/2, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-|>'})
+    ax_x.text(x0, y0-3, f'{1e3*fwhm:.0f}nm', ha='center')
 
     # --- Aesthetics ---
     # XY projection
-    ax_xy.text(0.02, 0.02, 'XY', fontsize=14, color='white', transform=ax_xy.transAxes)
-    ax_xy.set_xlabel('X (μm)')
-    ax_xy.set_ylabel('Y (μm)')
+    ax_xy.text(0.02, 0.02, 'XY', color='white', fontsize=14, transform=ax_xy.transAxes)
+    ax_xy.set_xlabel('X [μm]')
+    ax_xy.set_ylabel('Y [μm]')
     ax_xy.xaxis.set_ticks_position('top')
     ax_xy.xaxis.set_label_position('top')
     # YZ projection
-    ax_yz.text(0.02, 0.02, 'YZ', fontsize=14, color='white', transform=ax_yz.transAxes)
-    ax_yz.set_xlabel('Z (μm)')
-    ax_yz.set_ylabel('Y (μm)')
+    ax_yz.text(0.02, 0.02, 'YZ', color='white', fontsize=14, transform=ax_yz.transAxes)
+    ax_yz.set_xlabel('Z [μm]')
+    ax_yz.set_ylabel('Y [μm]')
     ax_yz.xaxis.set_ticks_position('top')
     ax_yz.xaxis.set_label_position('top')
     ax_yz.yaxis.set_ticks_position('right')
     ax_yz.yaxis.set_label_position('right')
     # XZ projection
-    ax_xz.text(0.02, 0.02, 'XZ', fontsize=14, color='white', transform=ax_xz.transAxes)
-    ax_xz.set_xlabel('X (μm)')
-    ax_xz.set_ylabel('Z (μm)')
-    # Other stuff
+    ax_xz.text(0.02, 0.02, 'XZ', color='white', fontsize=14, transform=ax_xz.transAxes)
+    ax_xz.set_xlabel('X [μm]')
+    ax_xz.set_ylabel('Z [μm]')
+    # 1D Axes
+    ax_z.set_xlabel('Z [μm]')
+    ax_y.set_xlabel('Y [μm]')
+    ax_x.set_xlabel('X [μm]')
+    # Miscellaneous
     [ax.legend(loc='upper right') for ax in [ax_z, ax_y, ax_x]]
     [ax.grid(ls=':') for ax in [ax_z, ax_y, ax_x]]
     plt.subplots_adjust(hspace=0.5, wspace=0.5)
@@ -358,8 +379,7 @@ def plot_psf_localizations(df):
     axes[0,1].plot(df['z0'], df['y0'], 'k+')  # YZ
     axes[1,0].plot(df['x0'], df['z0'], 'k+')  # XZ
 
-    # Aesthetics
-    # ----------
+    # --- Aesthetics ---
     # XY projection
     axes[0,0].text(0.02, 0.02, 'XY', fontsize=14, transform=axes[0,0].transAxes)
     axes[0,0].set_xlabel('X [px]')
