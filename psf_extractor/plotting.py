@@ -212,7 +212,7 @@ def plot_overlapping_features(mip, features, overlapping, width):
     ax.set_title(title)
 
 
-def plot_psf(psf, psx, psy, psz, crop=True):
+def plot_psf(psf, psx, psy, psz):
     """Fancy PSF plot."""
 
     # Create figure and axes
@@ -224,10 +224,6 @@ def plot_psf(psf, psx, psy, psz, crop=True):
     ax_z = fig.add_subplot(gs[-3,3:])
     ax_y = fig.add_subplot(gs[-2,3:])
     ax_x = fig.add_subplot(gs[-1,3:])
-
-    # Crippity crippity crop
-    if crop:
-        psf = crop_psf(psf, psx, psy, psz)
 
     # PSF dimensions
     Nz, Ny, Nx = psf.shape
