@@ -312,7 +312,7 @@ def remove_overlapping_features(features, wx, wy, return_indices=False):
     return features
 
 
-def extract_psfs(stack, features, shape):
+def extract_psfs(stack, features, shape, return_features=False):
     """Extract the PSF (aka subvolume) from each detected feature while 
     simultaneously filtering out edge features.
 
@@ -324,12 +324,14 @@ def extract_psfs(stack, features, shape):
         DataFrame of detected features
     shape : array-like or 3-tuple
         The dimensions of the PSF to be extracted (wz, wy, wx)
+    return_features : bool
+        Whether to return updated feature set
 
     Returns
     -------
     psfs : list
         List of all the PSFs as numpy arrays
-    features : `pd.DataFrame`
+    features : `pd.DataFrame` (optional)
         DataFrame of features with edge features removed
         
     Notes
@@ -381,12 +383,16 @@ def extract_psfs(stack, features, shape):
         # Determine if feature is along the edge of the image stack
         if (x1 < 0) or (y1 < 0) or (x2 > stack.shape[2]) or (y2 > stack.shape[1]):
             edge_features.append(i)
-        # Extract PSFs
+        # Extract PSF
         else:
             psf = stack[z1:z2, y1:y2, x1:x2]
             psfs.append(psf)
 
-    # Filter out edge features
+    # Donezo
+    if not return_features:
+        return psfs
+
+    # Filter out and return edge features
     features = features.drop(edge_features).reset_index(drop=True)
     return psfs, features
 
