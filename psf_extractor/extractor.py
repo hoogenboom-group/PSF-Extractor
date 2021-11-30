@@ -508,33 +508,29 @@ def localize_psfs(psfs):
 
 
 def align_psfs(psfs, locations, upsample_factor=2):
-    """Upsample, align, and sum PSFs.
+    """Upsample, align, and sum PSFs
 
-    Parameters
-    ----------
     psfs : list or array-like
         List of PSFs
     locations : `pd.DataFrame`
         Localization data with z0, y0, and x0 positions
-    upsample_factor : scalar
-        Factor by which to upsample the PSFs...
 
     Returns
     -------
     psf_sum : array-like
         Aligned and summed together PSFs
     """
-    # Alias upsample factor
+    # Alias
     usf = upsample_factor
 
-    # Loop through and sum psfs
-    psf_sum = 0
+    # Loop through PSFs
+    psf_sum = 0  # dummy variable
     for i, psf in tqdm(enumerate(psfs), total=len(psfs)):
 
-        # Upsample PSFs
-        psf_up = psf.repeat(usf, axis=0)\
-                    .repeat(usf, axis=1)\
-                    .repeat(usf, axis=2)
+        # Upsample PSF
+        psf_up = psfs[i].repeat(usf, axis=0)\
+                        .repeat(usf, axis=1)\
+                        .repeat(usf, axis=2)
 
         # From fit
         z0, y0, x0 = usf * locations.loc[i, ['z0', 'y0', 'x0']]
@@ -543,7 +539,7 @@ def align_psfs(psfs, locations, upsample_factor=2):
                       psf_up.shape[1]//2,
                       psf_up.shape[2]//2)
 
-        # Multidimensional ~roll~
+        # Multidimensional ~roll~ to align
         dz, dy, dx = int(zc-z0), int(yc-y0), int(xc-x0)
         psf_up_a = np.roll(psf_up, shift=(dz, dy, dx), axis=(0, 1, 2))
 

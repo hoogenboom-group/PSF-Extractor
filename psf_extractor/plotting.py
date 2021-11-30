@@ -31,7 +31,7 @@ fire = get_Daans_special_cmap()
 
 
 def plot_mip(mip, dx=None, dy=None, features=None):
-    """Plot the maximum intensity projection
+    """Plot the maximum intensity projection.
 
     Parameters
     ----------
@@ -78,7 +78,7 @@ def plot_mip(mip, dx=None, dy=None, features=None):
 
 def plot_mass_range(mip, dx, dy=None, masses=None, filtering='min',
                     **min_mass_kwargs):
-    """Plot detected features from MIP for a range of masses
+    """Plot detected features from MIP for a range of masses.
 
     Parameters
     ----------
@@ -141,7 +141,7 @@ def plot_mass_range(mip, dx, dy=None, masses=None, filtering='min',
 
 
 def plot_mass_range_interactive(mip, mass, features, filtering='min'):
-    """Interactive plot to determine minimum or maxmimum mass threshold
+    """Interactive plot to determine minimum or maxmimum mass threshold.
 
     Parameters
     ----------
@@ -179,7 +179,7 @@ def plot_mass_range_interactive(mip, mass, features, filtering='min'):
 
 
 def plot_overlapping_features(mip, features, overlapping, width):
-    """Plot detected features from MIP for a range of masses
+    """Plot detected features from MIP for a range of masses.
 
     Parameters
     ----------
@@ -213,7 +213,7 @@ def plot_overlapping_features(mip, features, overlapping, width):
 
 
 def plot_psf(psf, psx, psy, psz, crop=True):
-    """"""
+    """Fancy PSF plot."""
 
     # Create figure and axes
     fig = plt.figure(figsize=(11, 11))
@@ -297,7 +297,7 @@ def plot_psf(psf, psx, psy, psz, crop=True):
 
 
 def plot_psfs(psfs):
-    """Plot MIPs of extracted PSFs"""
+    """Plot MIPs of extracted PSFs."""
     # Create figure
     ncols = 8
     nrows = int(np.ceil(len(psfs) / ncols))
@@ -314,7 +314,7 @@ def plot_psfs(psfs):
 
 
 def plot_psf_localizations(df):
-    """Plot PSF localizations
+    """Plot PSF localizations.
 
     Parameters
     ----------
