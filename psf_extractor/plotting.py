@@ -240,7 +240,7 @@ def plot_psf(psf, psx, psy, psz, crop=True):
     # Plot 2D PSFs
     ax_xy.imshow(psf[z0,:,:], cmap=fire,
                  extent=[-dx/2, dx/2, -dy/2, dy/2])
-    ax_yz.imshow(psf[:,y0,:], cmap=fire,
+    ax_yz.imshow(psf[:,y0,:].T, cmap=fire,
                  extent=[-dz/2, dz/2, -dy/2, dy/2])
     ax_xz.imshow(psf[:,:,x0], cmap=fire,
                  extent=[-dx/2, dx/2, -dz/2, dz/2])
