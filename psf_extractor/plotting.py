@@ -227,7 +227,7 @@ def plot_psf(psf, psx, psy, psz, crop=True):
 
     # Crippity crippity crop
     if crop:
-        psf = crop_psf(psf)
+        psf = crop_psf(psf, psx, psy, psz)
 
     # PSF dimensions
     Nz, Ny, Nx = psf.shape
@@ -238,11 +238,11 @@ def plot_psf(psf, psx, psy, psz, crop=True):
 
     # --- 2D Plots ---
     # Plot 2D PSFs
-    ax_xy.imshow(psf[z0,:,:], cmap=fire,
+    ax_xy.imshow(psf[z0,:,:], cmap=fire, interpolation='none',
                  extent=[-dx/2, dx/2, -dy/2, dy/2])
-    ax_yz.imshow(psf[:,y0,:].T, cmap=fire,
+    ax_yz.imshow(psf[:,y0,:].T, cmap=fire, interpolation='none',
                  extent=[-dz/2, dz/2, -dy/2, dy/2])
-    ax_xz.imshow(psf[:,:,x0], cmap=fire,
+    ax_xz.imshow(psf[:,:,x0], cmap=fire, interpolation='none',
                  extent=[-dx/2, dx/2, -dz/2, dz/2])
 
     # --- 1D Plots ---
