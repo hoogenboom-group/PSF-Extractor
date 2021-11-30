@@ -388,7 +388,7 @@ def extract_psfs(stack, features, shape, return_features=False):
             psf = stack[z1:z2, y1:y2, x1:x2]
             psfs.append(psf)
 
-    # Donezo
+    # Basically donezo
     if not return_features:
         return psfs
 
@@ -443,6 +443,68 @@ def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False):
     return outliers
 
 
+def localize_psf(psf, integrate=True):
+    """Localize a given PSF in the stack.
+
+    Parameters
+    ----------
+    psf : array-like
+        3D array of PSF subvolume
+    integrate : bool
+        Whether to integrate the PSF over x and y before doing 1D fit.
+        Alternative is to take a slice in z at (x0, y0), the position
+        found from the 2D fit.
+
+    Returns
+    -------
+    x0, y0, z0 : scalars
+        Position data from Gaussian fit
+    sigma_x, sigma_y, sigma_z : scalars
+        Standard deviations from Gaussian fit
+    """
+    # Take maximum intensity projection
+    mip = np.max(psf, axis=0)
+
+    # 2D Fit
+    x0, y0, sigma_x, sigma_y, A, B = fit_gaussian_2D(mip)
+
+    # 1D Fit
+    # TODO: figure out which one is better...
+    if integrate:
+        # Integrate over x and y
+        z_sum = psf.sum(axis=(1, 2))
+        z0, sigma_z, A, B = fit_gaussian_1D(z_sum)
+    else:
+        # Slice in through x0, y0
+        z_slice = psf[:,int(y0), int(x0)]
+        z0, sigma_z, A, B = fit_gaussian_1D(z_slice)
+
+    return (x0, y0, z0, sigma_x, sigma_y, sigma_z)
+
+
+def localize_psfs(psfs):
+    """Localize all PSFs in stack.
+
+    Parameters
+    ----------
+    psfs : list or array-like
+        List of PSFs
+
+    Returns
+    -------
+    df : `pd.DataFrame`
+        DataFrame of the fit parameters from each PSF
+    """
+    # Initialize DataFrame
+    cols = ['x0', 'y0', 'z0', 'sigma_x', 'sigma_y', 'sigma_z']
+    df = pd.DataFrame(columns=cols)
+    # Loop through PSFs
+    for i, psf in tqdm(enumerate(psfs), total=len(psfs)):
+        # Localize each PSF and populate DataFrame with fit parameters
+        df.loc[i, cols] = localize_psf(psf)
+    return df
+
+
 def align_psfs(psfs, locations, upsample_factor=2):
     """Upsample, align, and sum PSFs.
 
@@ -490,12 +552,12 @@ def align_psfs(psfs, locations, upsample_factor=2):
 
 
 def crop_psf(psf):
-    """Crop an individual PSF."""
+    """Crop an individual PSF to a cube."""
     # Get dimensions
     Nz, Ny, Nx = psf.shape
     Nmin = np.min([Nz, Ny, Nx])
 
-    # Crop total psf to a cube defined by the smallest dimension
+    # Crop psf to a cube defined by the smallest dimension
     z1, z2 = (Nz-Nmin)//2, Nz - ((Nz-Nmin)//2) - Nz % 2
     y1, y2 = (Ny-Nmin)//2, Ny - ((Ny-Nmin)//2) - Ny % 2
     x1, x2 = (Nx-Nmin)//2, Nx - ((Nx-Nmin)//2) - Nx % 2
