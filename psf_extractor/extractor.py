@@ -549,17 +549,37 @@ def align_psfs(psfs, locations, upsample_factor=2):
     return psf_sum
 
 
-def crop_psf(psf):
+def crop_psf(psf, psx=None, psy=None, psz=None):
     """Crop an individual PSF to a cube."""
     # Get dimensions
     Nz, Ny, Nx = psf.shape
-    Nmin = np.min([Nz, Ny, Nx])
 
-    # Crop psf to a cube defined by the smallest dimension
-    z1, z2 = (Nz-Nmin)//2, Nz - ((Nz-Nmin)//2) - Nz % 2
-    y1, y2 = (Ny-Nmin)//2, Ny - ((Ny-Nmin)//2) - Ny % 2
-    x1, x2 = (Nx-Nmin)//2, Nx - ((Nx-Nmin)//2) - Nx % 2
-    psf_cube = psf[z1:z2, y1:y2, x1:x2]
+    # Cube of pixels
+    if (psx is None) or (psy is None) or (psz is None):
+        # Get smallest dimension
+        N_min = np.min([Nz, Ny, Nx])
+        # Crop psf to a cube defined by the smallest dimension
+        z1, z2 = (Nz-N_min)//2, Nz - ((Nz-N_min)//2) - Nz % 2
+        y1, y2 = (Ny-N_min)//2, Ny - ((Ny-N_min)//2) - Ny % 2
+        x1, x2 = (Nx-N_min)//2, Nx - ((Nx-N_min)//2) - Nx % 2
+        psf_cube = psf[z1:z2, y1:y2, x1:x2]
+
+    # Cube of real units (um, nm)
+    else:
+        # Calculate real size of PSF
+        dz, dy, dx = 1e-3*psz*Nz, 1e-3*psy*Ny, 1e-3*psx*Nx
+        # Get smallet dimension
+        d_min = np.min([dz, dy, dx])
+        # Get center coords
+        z0, y0, x0 = Nz//2, Ny//2, Nx//2
+        # Crop psf to a cube defined by the smallest dimension
+        z1, z2 = (z0 - int(d_min/2 / (1e-3*psz)),
+                  z0 + int(d_min/2 / (1e-3*psz)))
+        y1, y2 = (y0 - int(d_min/2 / (1e-3*psy)),
+                  y0 + int(d_min/2 / (1e-3*psy)))
+        x1, x2 = (x0 - int(d_min/2 / (1e-3*psx)),
+                  x0 + int(d_min/2 / (1e-3*psx)))
+        psf_cube = psf[z1:z2, y1:y2, x1:x2]
 
     return psf_cube
 
