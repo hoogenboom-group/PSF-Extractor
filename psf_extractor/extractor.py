@@ -39,6 +39,7 @@ __all__ = ['load_stack',
            'get_min_masses',
            'get_max_masses',
            'remove_overlapping_features',
+           'remove_overlapping_features_bruteforce',
            'extract_psfs',
            'detect_outlier_psfs',
            'localize_psf',
@@ -204,7 +205,7 @@ def get_min_masses(mip, dx, n=6, b=5):
     dx : scalar
         Expected feature diameter
         A decent estimate is half the emissision wavelength divided by the NA
-            dx ~ λ/(2×NA)
+            dx ~ λ/(2NA)
     n : scalar (optional)
         Number of candidate minimum masses to return
         Default : 6
@@ -265,6 +266,65 @@ def get_max_masses(min_mass, n=6, b=5):
 
 
 def remove_overlapping_features(features, wx, wy, return_indices=False):
+    """Remove overlapping features from feature set using cell listing method.
+
+    Parameters
+    ----------
+    features : `pd.DataFrame`
+        Feature set returned from `trackpy.locate`
+    wx, wy : scalar
+        Dimensions of bounding boxes
+    return_indices : bool
+        Whether to return the indices of the overlapping features
+
+    Returns
+    -------
+    features : `pd.DataFrame`
+        Feature set with overlapping features removed
+    """
+    # Create a bounding box for each bead
+    df_bboxes = features.loc[:, ['x', 'y']]
+    df_bboxes['x_min'] = features['x'] - wx/2
+    df_bboxes['y_min'] = features['y'] - wy/2
+    df_bboxes['x_max'] = features['x'] + wx/2
+    df_bboxes['y_max'] = features['y'] + wy/2
+
+    # Keep track of overlapping features
+    overlapping = []
+    # Define cell parameters
+    cw = 2*wx  # cell width
+    # Alias for features
+    X = features['x'].values
+    Y = features['y'].values
+
+    # Loop through a grid in x, y to create cells
+    Nx = X.max() + cw
+    Ny = Y.max() + cw
+    for x in tqdm(np.arange(0, Nx, cw)):
+        for y in np.arange(0, Ny, cw):
+            # Create cell
+            cell = [x-cw, y-cw, x+2*cw, y+2*cw]
+            # Get features in cell
+            in_cell = df_bboxes[((cell[0] < X) & (X < cell[2]) &\
+                                 (cell[1] < Y) & (Y < cell[3]))]
+            # Combinations
+            pairs = list(combinations(in_cell.reset_index().values, 2))
+
+            # Loop through pairs of bboxes
+            for (bbox_i, bbox_j) in pairs:
+                if bboxes_overlap(bbox_i[-4:], bbox_j[-4:]):
+                    overlapping.append(bbox_i[0])
+                    overlapping.append(bbox_j[0])
+
+    overlapping = np.unique(overlapping)
+    features = features.drop(index=overlapping)
+    if return_indices:
+        return features, overlapping
+    return features
+
+
+def remove_overlapping_features_bruteforce(features, wx, wy,
+                                           return_indices=False):
     """Remove overlapping features from feature set.
 
     Parameters
@@ -284,13 +344,13 @@ def remove_overlapping_features(features, wx, wy, return_indices=False):
     # TODO: figure out why this is so much slower than
     # previous blacklist function (which also checks
     # against the image borders) 
-    
+
     # Create a bounding box for each bead
     df_bboxes = features.loc[:, ['x', 'y']]
-    df_bboxes['x_min'] = features['x'] - wx
-    df_bboxes['y_min'] = features['y'] - wy
-    df_bboxes['x_max'] = features['x'] + wx
-    df_bboxes['y_max'] = features['y'] + wy
+    df_bboxes['x_min'] = features['x'] - wx/2
+    df_bboxes['y_min'] = features['y'] - wy/2
+    df_bboxes['x_max'] = features['x'] + wx/2
+    df_bboxes['y_max'] = features['y'] + wy/2
 
     # Collect overlapping features
     overlapping_features = []
