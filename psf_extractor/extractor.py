@@ -91,7 +91,7 @@ def load_stack(file_pattern):
         for i, fp in tqdm(enumerate(file_pattern),
                           total=len(file_pattern)):
             logging.debug(f"Reading image file ({i+1}/{len(file_pattern)}) : {fp}")
-            image = io.imread(fp)
+            image = io.imread(fp, plugin='pil')
             images.append(image)
         # Create 3D image stack (Length, Height, Width)
         stack = np.stack(images, axis=0)
@@ -112,7 +112,7 @@ def load_stack(file_pattern):
             for i, fp in tqdm(enumerate(filepaths),
                               total=len(filepaths)):
                 logging.debug(f"Reading image file ({i+1}/{len(filepaths)}) : {fp}")
-                image = io.imread(fp)
+                image = io.imread(fp, plugin='pil')
                 images.append(image)
             # Create 3D image stack (Length, Height, Width)
             stack = np.stack(images, axis=0)
@@ -123,7 +123,7 @@ def load_stack(file_pattern):
              (Path(file_pattern).suffix == '.gif'):
             logging.info("Creating stack from tiff stack")
             # Create 3D image stack (Length, Height, Width)
-            stack = io.imread(file_pattern)
+            stack = io.imread(file_pattern, plugin='pil')
 
         # ?
         else:
