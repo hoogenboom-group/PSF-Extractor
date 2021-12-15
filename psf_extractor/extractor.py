@@ -544,13 +544,15 @@ def localize_psf(psf, integrate=True):
     return (x0, y0, z0, sigma_x, sigma_y, sigma_z)
 
 
-def localize_psfs(psfs):
+def localize_psfs(psfs, integrate=True):
     """Localize all PSFs in stack.
 
     Parameters
     ----------
     psfs : list or array-like
         List of PSFs
+    integrate : bool
+        Whether to integrate the PSF over x and y before doing 1D fit.
 
     Returns
     -------
@@ -563,7 +565,7 @@ def localize_psfs(psfs):
     # Loop through PSFs
     for i, psf in tqdm(enumerate(psfs), total=len(psfs)):
         # Localize each PSF and populate DataFrame with fit parameters
-        df.loc[i, cols] = localize_psf(psf)
+        df.loc[i, cols] = localize_psf(psf, integrate=integrate)
     return df
 
 
