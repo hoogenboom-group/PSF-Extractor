@@ -317,8 +317,17 @@ def plot_psf(psf, psx, psy, psz):
     plt.subplots_adjust(hspace=0.5, wspace=0.5)
 
 
-def plot_psfs(psfs):
+def plot_psfs(psfs, psx=None, psy=None):
     """Plot MIPs of extracted PSFs."""
+    # Switch to physical units if pixel sizes are provided
+    if (psx is not None) and (psy is not None):
+        # PSFs should all have same shape
+        Nz, Ny, Nx = psfs[0].shape
+        dy, dx = 1e-3*psy*Ny, 1e-3*psx*Nx
+        extent = [-dx/2, dx/2, -dy/2, dy/2]
+    else:
+        extent = None
+
     # Create figure
     ncols = 8
     nrows = int(np.ceil(len(psfs) / ncols))
@@ -328,7 +337,8 @@ def plot_psfs(psfs):
     for i, psf in tqdm(enumerate(psfs), total=len(psfs)):
         ax = axes.flat[i]
         mip = np.max(psf, axis=0)
-        ax.imshow(mip, cmap=fire)
+        ax.imshow(mip, cmap=fire, interpolation='none',
+                  extent=extent)
         ax.set_title(f'PSF {i}')
     # Remove empty subplots
     [fig.delaxes(axes.flat[-i-1]) for i in range(ncols*nrows - len(psfs))]
