@@ -1,0 +1,12 @@
+stack parameters:
+
+Bead diameter: 200 nm
+
+NA: 0.95
+Excitation: 488 nm
+Emission: 520 nm
+
+Voxel size:
+X: 108 nm
+Y: 108 nm
+Z: 300 nm
