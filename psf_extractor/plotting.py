@@ -178,7 +178,7 @@ def plot_mass_range_interactive(mip, mass, features, filtering='min'):
     plt.show()
 
 
-def plot_overlapping_features(mip, features, overlapping, width):
+def plot_overlapping_features(mip, features, overlapping, wx, wy=None):
     """Plot detected features from MIP for a range of masses.
 
     Parameters
@@ -189,9 +189,13 @@ def plot_overlapping_features(mip, features, overlapping, width):
         DataFrame of detected features
     overlapping : array-like
         1D list or array of indices corresponding to overlapping features
-    width : scalar
-        Width of bounding box
+    wx, wy : scalar
+        Width and height of bounding box
     """
+    # Set height if not provided
+    if wy is None:
+        wy = wx
+
     # Enhance contrast in MIP (by taking the log)
     s = 1/mip[mip!=0].min()  # scaling factor (such that log(min) = 0
     mip_log = np.log(s*mip,
@@ -205,8 +209,8 @@ def plot_overlapping_features(mip, features, overlapping, width):
     # Plot bboxes of overlapping and nonoverlapping features
     for i, feature in features.iterrows():
         color = '#ff0000' if i in overlapping else '#00ff00'
-        p = Rectangle((feature['x']-width, feature['y']-width),
-                      2*width, 2*width, facecolor='none', lw=1, edgecolor=color)
+        p = Rectangle((feature['x']-wx/2, feature['y']-wy/2),
+                      wx, wy, facecolor='none', lw=1, edgecolor=color)
         ax.add_patch(p)
     title = f'Overlapping features: {overlapping.size:.0f}/{len(features):.0f}'
     ax.set_title(title)
