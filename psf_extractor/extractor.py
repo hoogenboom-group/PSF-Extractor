@@ -265,8 +265,8 @@ def get_max_masses(min_mass, n=6, b=5):
     return max_masses
 
 
-def remove_overlapping_features(features, wx, wy, return_indices=False):
-    """Remove overlapping features from feature set using cell listing method.
+def detect_overlapping_features(features, wx, wy=None):
+    """Detects overlapping features from feature set.
 
     Parameters
     ----------
@@ -279,9 +279,16 @@ def remove_overlapping_features(features, wx, wy, return_indices=False):
 
     Returns
     -------
-    features : `pd.DataFrame`
-        Feature set with overlapping features removed
+    overlapping : array-like
+        Indices of overlapping features (to be discarded)
+    
+    Notes
+    -----
+    Utilizes cell listing approach for huge speed increases over brute-force.
     """
+    # Set wy if not provided
+    wy = wx if wy is None else wy  # (assumes a box)
+
     # Create a bounding box for each bead
     df_bboxes = features.loc[:, ['x', 'y']]
     df_bboxes['x_min'] = features['x'] - wx/2
@@ -317,10 +324,7 @@ def remove_overlapping_features(features, wx, wy, return_indices=False):
                     overlapping.append(bbox_j[0])
 
     overlapping = np.unique(overlapping)
-    features = features.drop(index=overlapping)
-    if return_indices:
-        return features, overlapping
-    return features
+    return overlapping
 
 
 def extract_psfs(stack, features, shape, return_features=False):
@@ -404,7 +408,7 @@ def extract_psfs(stack, features, shape, return_features=False):
         return psfs
 
     # Filter out and return edge features
-    features = features.drop(edge_features).reset_index(drop=True)
+    features = features.drop(edge_features)
     return psfs, features
 
 
@@ -513,8 +517,12 @@ def localize_psfs(psfs, integrate=False):
     df = pd.DataFrame(columns=cols)
     # Loop through PSFs
     for i, psf in tqdm(enumerate(psfs), total=len(psfs)):
-        # Localize each PSF and populate DataFrame with fit parameters
-        df.loc[i, cols] = localize_psf(psf, integrate=integrate)
+        try:
+            # Localize each PSF and populate DataFrame with fit parameters
+            df.loc[i, cols] = localize_psf(psf, integrate=integrate)
+        # `curve_fit` failed
+        except RuntimeError:
+            pass
     return df
 
 
