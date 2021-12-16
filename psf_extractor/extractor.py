@@ -323,57 +323,6 @@ def remove_overlapping_features(features, wx, wy, return_indices=False):
     return features
 
 
-def remove_overlapping_features_bruteforce(features, wx, wy,
-                                           return_indices=False):
-    """Remove overlapping features from feature set.
-
-    Parameters
-    ----------
-    features : `pd.DataFrame`
-        Feature set returned from `trackpy.locate`
-    wx, wy : scalar
-        Dimensions of bounding boxes
-    return_indices : bool
-        Whether to return the indices of the overlapping features
-
-    Returns
-    -------
-    features : `pd.DataFrame`
-        Feature set with overlapping features removed
-    """
-    # TODO: figure out why this is so much slower than
-    # previous blacklist function (which also checks
-    # against the image borders) 
-
-    # Create a bounding box for each bead
-    df_bboxes = features.loc[:, ['x', 'y']]
-    df_bboxes['x_min'] = features['x'] - wx/2
-    df_bboxes['y_min'] = features['y'] - wy/2
-    df_bboxes['x_max'] = features['x'] + wx/2
-    df_bboxes['y_max'] = features['y'] + wy/2
-
-    # Collect overlapping features
-    overlapping_features = []
-    # Iterate through every (unique) pair of bounding boxes
-    ij = list(combinations(df_bboxes.index, 2))
-    for i, j in tqdm(ij, total=len(ij)):
-
-        # Create bounding boxes for each pair of features
-        bbox_i = df_bboxes.loc[i, ['x_min', 'y_min', 'x_max', 'y_max']].values
-        bbox_j = df_bboxes.loc[j, ['x_min', 'y_min', 'x_max', 'y_max']].values
-
-        # Check for overlap
-        if bboxes_overlap(bbox_i, bbox_j):
-            overlapping_features.append(i)
-            overlapping_features.append(j)
-
-    overlapping = np.unique(overlapping_features)
-    features = features.drop(index=overlapping)
-    if return_indices:
-        return features, overlapping
-    return features
-
-
 def extract_psfs(stack, features, shape, return_features=False):
     """Extract the PSF (aka subvolume) from each detected feature while 
     simultaneously filtering out edge features.
