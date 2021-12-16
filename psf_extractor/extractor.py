@@ -505,7 +505,7 @@ def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False):
     return outliers
 
 
-def localize_psf(psf, integrate=True):
+def localize_psf(psf, integrate=False):
     """Localize a given PSF in the stack.
 
     Parameters
@@ -531,7 +531,7 @@ def localize_psf(psf, integrate=True):
     x0, y0, sigma_x, sigma_y, A, B = fit_gaussian_2D(mip)
 
     # 1D Fit
-    # TODO: figure out which one is better...
+    # TODO: seems like slice is better but not totally convinced
     if integrate:
         # Integrate over x and y
         z_sum = psf.sum(axis=(1, 2))
@@ -544,7 +544,7 @@ def localize_psf(psf, integrate=True):
     return (x0, y0, z0, sigma_x, sigma_y, sigma_z)
 
 
-def localize_psfs(psfs, integrate=True):
+def localize_psfs(psfs, integrate=False):
     """Localize all PSFs in stack.
 
     Parameters
