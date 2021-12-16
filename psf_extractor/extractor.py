@@ -326,7 +326,7 @@ def detect_overlapping_features(features, wx, wy=None):
     return overlapping
 
 
-def extract_psfs(stack, features, shape, return_features=False):
+def extract_psfs(stack, features, shape, return_indices=False):
     """Extract the PSF (aka subvolume) from each detected feature while 
     simultaneously filtering out edge features.
 
@@ -403,12 +403,11 @@ def extract_psfs(stack, features, shape, return_features=False):
             psfs.append(psf)
 
     # Basically donezo
-    if not return_features:
+    if not return_indices:
         return psfs
 
-    # Filter out and return edge features
-    features = features.drop(edge_features)
-    return psfs, features
+    # Return edge features
+    return psfs, edge_features
 
 
 def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False):
