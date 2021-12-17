@@ -273,20 +273,18 @@ def detect_overlapping_features(features, wx, wy=None):
         Feature set returned from `trackpy.locate`
     wx, wy : scalar
         Dimensions of bounding boxes
-    return_indices : bool
-        Whether to return the indices of the overlapping features
 
     Returns
     -------
     overlapping : array-like
         Indices of overlapping features (to be discarded)
-    
+
     Notes
     -----
-    Utilizes cell listing approach for huge speed increases over brute-force.
+    * Utilizes cell listing approach for huge speed increases over brute-force.
     """
     # Set wy if not provided
-    wy = wx if wy is None else wy  # (assumes a box)
+    wy = wx if wy is None else wy  # (assumes a square box)
 
     # Create a bounding box for each bead
     df_bboxes = features.loc[:, ['x', 'y']]
@@ -322,6 +320,7 @@ def detect_overlapping_features(features, wx, wy=None):
                     overlapping.append(bbox_i[0])
                     overlapping.append(bbox_j[0])
 
+    # Deduplicate indices
     overlapping = np.unique(overlapping)
     return overlapping
 
