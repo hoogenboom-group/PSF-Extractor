@@ -444,12 +444,16 @@ def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False):
 
     # Get indices of candidate outliers
     suspects_i = np.argwhere(pccs < pcc_min)
-    # Convert to indices of PSF pairs
-    suspects_ij = np.array(ij)[suspects_i[:, 0]]
+    # If no suspects exist
+    if suspects_i.size == 0:
+        outliers = np.array([])
+    else:
+        # Convert to indices of PSF pairs
+        suspects_ij = np.array(ij)[suspects_i[:, 0]]
 
-    # Determine frequency of out lying (?)
-    i, counts = np.unique(suspects_ij, return_counts=True)
-    outliers = i[counts > 3*counts.mean()]
+        # Determine frequency of out lying (?)
+        i, counts = np.unique(suspects_ij, return_counts=True)
+        outliers = i[counts > 3*counts.mean()]
 
     if return_pccs:
         return outliers, pccs
