@@ -325,6 +325,41 @@ def detect_overlapping_features(features, wx, wy=None):
     return overlapping
 
 
+def detect_edge_features(features, Dx, Dy, wx, wy=None):
+    """Detects edge features from feature set.
+
+    Parameters
+    ----------
+    features : `pd.DataFrame`
+        Feature set returned from `trackpy.locate`
+    Dx, Dy : scalar
+        Dimensions of stack
+    wx, wy : scalar
+        Dimensions of bounding boxes
+
+    Returns
+    -------
+    edges : array-like
+        Indices of edge features (to be discarded)
+    """
+    # Set wy if not provided
+    wy = wx if wy is None else wy  # (assumes a square box)
+
+    # Create a bounding box for each bead
+    df_bboxes = features.loc[:, ['x', 'y']]
+    df_bboxes['x_min'] = features['x'] - wx/2
+    df_bboxes['y_min'] = features['y'] - wy/2
+    df_bboxes['x_max'] = features['x'] + wx/2
+    df_bboxes['y_max'] = features['y'] + wy/2
+
+    # Check boundaries
+    edges = features.loc[(df_bboxes['x_min'] < 0) |\
+                         (df_bboxes['y_min'] < 0) |\
+                         (df_bboxes['x_max'] > Dx) |\
+                         (df_bboxes['y_max'] > Dy)].index.values
+    return edges
+
+
 def extract_psfs(stack, features, shape, return_indices=False):
     """Extract the PSF (aka subvolume) from each detected feature while 
     simultaneously filtering out edge features.
