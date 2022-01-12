@@ -38,8 +38,8 @@ __all__ = ['load_stack',
            'get_mip',
            'get_min_masses',
            'get_max_masses',
-           'remove_overlapping_features',
-           'remove_overlapping_features_bruteforce',
+           'detect_overlapping_features',
+           'detect_edge_features',
            'extract_psfs',
            'detect_outlier_psfs',
            'localize_psf',
@@ -91,7 +91,7 @@ def load_stack(file_pattern):
         for i, fp in tqdm(enumerate(file_pattern),
                           total=len(file_pattern)):
             logging.debug(f"Reading image file ({i+1}/{len(file_pattern)}) : {fp}")
-            image = io.imread(fp)
+            image = io.imread(fp, plugin='pil')
             images.append(image)
         # Create 3D image stack (Length, Height, Width)
         stack = np.stack(images, axis=0)
@@ -112,7 +112,7 @@ def load_stack(file_pattern):
             for i, fp in tqdm(enumerate(filepaths),
                               total=len(filepaths)):
                 logging.debug(f"Reading image file ({i+1}/{len(filepaths)}) : {fp}")
-                image = io.imread(fp)
+                image = io.imread(fp, plugin='pil')
                 images.append(image)
             # Create 3D image stack (Length, Height, Width)
             stack = np.stack(images, axis=0)
@@ -123,7 +123,7 @@ def load_stack(file_pattern):
              (Path(file_pattern).suffix == '.gif'):
             logging.info("Creating stack from tiff stack")
             # Create 3D image stack (Length, Height, Width)
-            stack = io.imread(file_pattern)
+            stack = io.imread(file_pattern, plugin='pil')
 
         # ?
         else:
@@ -265,8 +265,8 @@ def get_max_masses(min_mass, n=6, b=5):
     return max_masses
 
 
-def remove_overlapping_features(features, wx, wy, return_indices=False):
-    """Remove overlapping features from feature set using cell listing method.
+def detect_overlapping_features(features, wx, wy=None):
+    """Detects overlapping features from feature set.
 
     Parameters
     ----------
@@ -274,14 +274,19 @@ def remove_overlapping_features(features, wx, wy, return_indices=False):
         Feature set returned from `trackpy.locate`
     wx, wy : scalar
         Dimensions of bounding boxes
-    return_indices : bool
-        Whether to return the indices of the overlapping features
 
     Returns
     -------
-    features : `pd.DataFrame`
-        Feature set with overlapping features removed
+    overlapping : array-like
+        Indices of overlapping features (to be discarded)
+
+    Notes
+    -----
+    * Utilizes cell listing approach for huge speed increases over brute-force.
     """
+    # Set wy if not provided
+    wy = wx if wy is None else wy  # (assumes a square box)
+
     # Create a bounding box for each bead
     df_bboxes = features.loc[:, ['x', 'y']]
     df_bboxes['x_min'] = features['x'] - wx/2
@@ -316,34 +321,30 @@ def remove_overlapping_features(features, wx, wy, return_indices=False):
                     overlapping.append(bbox_i[0])
                     overlapping.append(bbox_j[0])
 
+    # Deduplicate indices
     overlapping = np.unique(overlapping)
-    features = features.drop(index=overlapping)
-    if return_indices:
-        return features, overlapping
-    return features
+    return overlapping
 
 
-def remove_overlapping_features_bruteforce(features, wx, wy,
-                                           return_indices=False):
-    """Remove overlapping features from feature set.
+def detect_edge_features(features, Dx, Dy, wx, wy=None):
+    """Detects edge features from feature set.
 
     Parameters
     ----------
     features : `pd.DataFrame`
         Feature set returned from `trackpy.locate`
+    Dx, Dy : scalar
+        Dimensions of stack
     wx, wy : scalar
         Dimensions of bounding boxes
-    return_indices : bool
-        Whether to return the indices of the overlapping features
 
     Returns
     -------
-    features : `pd.DataFrame`
-        Feature set with overlapping features removed
+    edges : array-like
+        Indices of edge features (to be discarded)
     """
-    # TODO: figure out why this is so much slower than
-    # previous blacklist function (which also checks
-    # against the image borders) 
+    # Set wy if not provided
+    wy = wx if wy is None else wy  # (assumes a square box)
 
     # Create a bounding box for each bead
     df_bboxes = features.loc[:, ['x', 'y']]
@@ -352,29 +353,15 @@ def remove_overlapping_features_bruteforce(features, wx, wy,
     df_bboxes['x_max'] = features['x'] + wx/2
     df_bboxes['y_max'] = features['y'] + wy/2
 
-    # Collect overlapping features
-    overlapping_features = []
-    # Iterate through every (unique) pair of bounding boxes
-    ij = list(combinations(df_bboxes.index, 2))
-    for i, j in tqdm(ij, total=len(ij)):
-
-        # Create bounding boxes for each pair of features
-        bbox_i = df_bboxes.loc[i, ['x_min', 'y_min', 'x_max', 'y_max']].values
-        bbox_j = df_bboxes.loc[j, ['x_min', 'y_min', 'x_max', 'y_max']].values
-
-        # Check for overlap
-        if bboxes_overlap(bbox_i, bbox_j):
-            overlapping_features.append(i)
-            overlapping_features.append(j)
-
-    overlapping = np.unique(overlapping_features)
-    features = features.drop(index=overlapping)
-    if return_indices:
-        return features, overlapping
-    return features
+    # Check boundaries
+    edges = features.loc[(df_bboxes['x_min'] < 0) |\
+                         (df_bboxes['y_min'] < 0) |\
+                         (df_bboxes['x_max'] > Dx) |\
+                         (df_bboxes['y_max'] > Dy)].index.values
+    return edges
 
 
-def extract_psfs(stack, features, shape, return_features=False):
+def extract_psfs(stack, features, shape, return_indices=False):
     """Extract the PSF (aka subvolume) from each detected feature while 
     simultaneously filtering out edge features.
 
@@ -451,12 +438,11 @@ def extract_psfs(stack, features, shape, return_features=False):
             psfs.append(psf)
 
     # Basically donezo
-    if not return_features:
+    if not return_indices:
         return psfs
 
-    # Filter out and return edge features
-    features = features.drop(edge_features).reset_index(drop=True)
-    return psfs, features
+    # Return edge features
+    return psfs, edge_features
 
 
 def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False):
@@ -493,19 +479,23 @@ def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False):
 
     # Get indices of candidate outliers
     suspects_i = np.argwhere(pccs < pcc_min)
-    # Convert to indices of PSF pairs
-    suspects_ij = np.array(ij)[suspects_i[:, 0]]
+    # If no suspects exist
+    if suspects_i.size == 0:
+        outliers = np.array([])
+    else:
+        # Convert to indices of PSF pairs
+        suspects_ij = np.array(ij)[suspects_i[:, 0]]
 
-    # Determine frequency of out lying (?)
-    i, counts = np.unique(suspects_ij, return_counts=True)
-    outliers = i[counts > 3*counts.mean()]
+        # Determine frequency of out lying (?)
+        i, counts = np.unique(suspects_ij, return_counts=True)
+        outliers = i[counts > 3*counts.mean()]
 
     if return_pccs:
         return outliers, pccs
     return outliers
 
 
-def localize_psf(psf, integrate=True):
+def localize_psf(psf, integrate=False):
     """Localize a given PSF in the stack.
 
     Parameters
@@ -531,7 +521,7 @@ def localize_psf(psf, integrate=True):
     x0, y0, sigma_x, sigma_y, A, B = fit_gaussian_2D(mip)
 
     # 1D Fit
-    # TODO: figure out which one is better...
+    # TODO: seems like slice is better but not totally convinced
     if integrate:
         # Integrate over x and y
         z_sum = psf.sum(axis=(1, 2))
@@ -544,13 +534,15 @@ def localize_psf(psf, integrate=True):
     return (x0, y0, z0, sigma_x, sigma_y, sigma_z)
 
 
-def localize_psfs(psfs):
+def localize_psfs(psfs, integrate=False):
     """Localize all PSFs in stack.
 
     Parameters
     ----------
     psfs : list or array-like
         List of PSFs
+    integrate : bool
+        Whether to integrate the PSF over x and y before doing 1D fit.
 
     Returns
     -------
@@ -562,8 +554,12 @@ def localize_psfs(psfs):
     df = pd.DataFrame(columns=cols)
     # Loop through PSFs
     for i, psf in tqdm(enumerate(psfs), total=len(psfs)):
-        # Localize each PSF and populate DataFrame with fit parameters
-        df.loc[i, cols] = localize_psf(psf)
+        try:
+            # Localize each PSF and populate DataFrame with fit parameters
+            df.loc[i, cols] = localize_psf(psf, integrate=integrate)
+        # `curve_fit` failed
+        except RuntimeError:
+            pass
     return df
 
 

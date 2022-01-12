@@ -83,13 +83,13 @@ def guess_gaussian_1D_params(y, x=None):
         x = np.arange(y.size)
 
     # Estimate x0
-    x0 = x.mean()
+    x0 = x[y.argmax()]
     # Estimate sigma_x
     xs = x[y > y.max()/2]  # threshold at half-maximum
-    # sigma = FWHM / (2*sqrt(2*ln(2))) ~ FWHM / 2.355
+    # sigma = FWHM / (2*sqrt(2*ln(2)))
     sigma_x = (xs.max() - xs.min()) / 2.355
     # Estimates for amplitude and background
-    A = y.max()
+    A = y.max() - y.min()
     B = y.min()
     return x0, sigma_x, A, B
 
@@ -112,7 +112,8 @@ def fit_gaussian_2D(image, p0=None, theta=None, epsilon=1e-3):
 
     References
     ----------
-    [1] https://scipython.com/blog/non-linear-least-squares-fitting-of-a-two-dimensional-data/"""
+    [1] https://scipython.com/blog/non-linear-least-squares-fitting-of-a-two-dimensional-data/
+    """
     # TODO: check robustness parameter estimation 
     # and fitting for data with high intensity outliers
     sy, sx = image.shape

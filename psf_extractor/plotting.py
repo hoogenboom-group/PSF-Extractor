@@ -178,7 +178,7 @@ def plot_mass_range_interactive(mip, mass, features, filtering='min'):
     plt.show()
 
 
-def plot_overlapping_features(mip, features, overlapping, width):
+def plot_overlapping_features(mip, features, overlapping, wx, wy=None):
     """Plot detected features from MIP for a range of masses.
 
     Parameters
@@ -189,9 +189,13 @@ def plot_overlapping_features(mip, features, overlapping, width):
         DataFrame of detected features
     overlapping : array-like
         1D list or array of indices corresponding to overlapping features
-    width : scalar
-        Width of bounding box
+    wx, wy : scalar
+        Width and height of bounding box
     """
+    # Set height if not provided
+    if wy is None:
+        wy = wx
+
     # Enhance contrast in MIP (by taking the log)
     s = 1/mip[mip!=0].min()  # scaling factor (such that log(min) = 0
     mip_log = np.log(s*mip,
@@ -205,8 +209,8 @@ def plot_overlapping_features(mip, features, overlapping, width):
     # Plot bboxes of overlapping and nonoverlapping features
     for i, feature in features.iterrows():
         color = '#ff0000' if i in overlapping else '#00ff00'
-        p = Rectangle((feature['x']-width, feature['y']-width),
-                      2*width, 2*width, facecolor='none', lw=1, edgecolor=color)
+        p = Rectangle((feature['x']-wx/2, feature['y']-wy/2),
+                      wx, wy, facecolor='none', lw=1, edgecolor=color)
         ax.add_patch(p)
     title = f'Overlapping features: {overlapping.size:.0f}/{len(features):.0f}'
     ax.set_title(title)
@@ -268,21 +272,21 @@ def plot_psf(psf, psx, psy, psz):
     # Z
     x0 = popt_z[0]
     y0 = (popt_z[2] - popt_z[3])/2
-    fwhm = 2.355 * popt_z[1]
+    fwhm = np.abs(2.355 * popt_z[1])
     ax_z.annotate('', xy=(x0-fwhm/2, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-|>'})
-    ax_z.text(x0, y0-3, f'{1e3*fwhm:.0f}nm', ha='center')
+    ax_z.text(x0, prof_z.max()/3.5, f'{1e3*fwhm:.0f}nm', ha='center')
     # Y
     x0 = popt_y[0]
     y0 = (popt_y[2] - popt_y[3])/2
-    fwhm = 2.355 * popt_y[1]
+    fwhm = np.abs(2.355 * popt_y[1])
     ax_y.annotate('', xy=(x0-fwhm/2, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-|>'})
-    ax_y.text(x0, y0-3, f'{1e3*fwhm:.0f}nm', ha='center')
+    ax_y.text(x0, prof_y.max()/3.5, f'{1e3*fwhm:.0f}nm', ha='center')
     # X
     x0 = popt_x[0]
     y0 = (popt_x[2] - popt_x[3])/2
-    fwhm = 2.355 * popt_x[1]
+    fwhm = np.abs(2.355 * popt_x[1])
     ax_x.annotate('', xy=(x0-fwhm/2, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-|>'})
-    ax_x.text(x0, y0-3, f'{1e3*fwhm:.0f}nm', ha='center')
+    ax_x.text(x0, prof_x.max()/3.5, f'{1e3*fwhm:.0f}nm', ha='center')
 
     # --- Aesthetics ---
     # XY projection
@@ -313,8 +317,17 @@ def plot_psf(psf, psx, psy, psz):
     plt.subplots_adjust(hspace=0.5, wspace=0.5)
 
 
-def plot_psfs(psfs):
+def plot_psfs(psfs, psx=None, psy=None):
     """Plot MIPs of extracted PSFs."""
+    # Switch to physical units if pixel sizes are provided
+    if (psx is not None) and (psy is not None):
+        # PSFs should all have same shape
+        Nz, Ny, Nx = psfs[0].shape
+        dy, dx = 1e-3*psy*Ny, 1e-3*psx*Nx
+        extent = [-dx/2, dx/2, -dy/2, dy/2]
+    else:
+        extent = None
+
     # Create figure
     ncols = 8
     nrows = int(np.ceil(len(psfs) / ncols))
@@ -324,7 +337,8 @@ def plot_psfs(psfs):
     for i, psf in tqdm(enumerate(psfs), total=len(psfs)):
         ax = axes.flat[i]
         mip = np.max(psf, axis=0)
-        ax.imshow(mip, cmap=fire)
+        ax.imshow(mip, cmap=fire, interpolation='none',
+                  extent=extent)
         ax.set_title(f'PSF {i}')
     # Remove empty subplots
     [fig.delaxes(axes.flat[-i-1]) for i in range(ncols*nrows - len(psfs))]
