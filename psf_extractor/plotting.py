@@ -7,7 +7,7 @@ from matplotlib.patches import Ellipse, Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from .extractor import get_mip, get_min_masses, crop_psf
-from .gauss import gaussian_1D, fit_gaussian_1D
+from .gauss import gaussian_1D, fit_gaussian_1D, guess_gaussian_1D_params
 from .util import get_Daans_special_cmap, is_notebook
 
 if is_notebook():
@@ -221,6 +221,8 @@ def plot_overlapping_features(mip, features, overlapping, wx, wy=None):
     ax.set_title(title)
 
 
+from psf_extractor import gaussian_1D, fit_gaussian_1D
+
 def plot_psf(psf, psx, psy, psz):
     """Fancy PSF plot."""
 
@@ -260,9 +262,9 @@ def plot_psf(psf, psx, psy, psz):
     y = np.linspace(-dy/2, dy/2, prof_y.size)
     x = np.linspace(-dx/2, dx/2, prof_x.size)
     # Do 1D PSF fits
-    popt_z = fit_gaussian_1D(prof_z, z, p0=[0, 1, 1, 0])
-    popt_y = fit_gaussian_1D(prof_y, y, p0=[0, 1, 1, 0])
-    popt_x = fit_gaussian_1D(prof_x, x, p0=[0, 1, 1, 0])
+    popt_z = fit_gaussian_1D(prof_z, z, p0=guess_gaussian_1D_params(prof_z, z))
+    popt_y = fit_gaussian_1D(prof_y, y, p0=guess_gaussian_1D_params(prof_y, y))
+    popt_x = fit_gaussian_1D(prof_x, x, p0=guess_gaussian_1D_params(prof_x, x))
     # Plot 1D PSFs
     plot_kwargs = {'ms': 5, 'marker': 'o', 'ls': '', 'alpha': 0.75}
     ax_z.plot(z, prof_z, c='C1', label='Z', **plot_kwargs)
