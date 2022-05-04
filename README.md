@@ -15,9 +15,9 @@ $ conda create -n psf -c conda-forge numpy scipy pandas matplotlib scikit-image 
 $ conda activate psf
 ```
 
-* Install directly from github repository
+* Install directly from github repository (assumes git is installed and in PATH)
 ```
-(psf) $ pip install git+git://github.com/hoogenboom-group/PSF-Extractor.git
+(psf) $ pip install git+https://github.com/hoogenboom-group/PSF-Extractor.git
 ```
 
 
