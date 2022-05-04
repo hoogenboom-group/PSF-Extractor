@@ -211,9 +211,9 @@ def plot_overlapping_features(mip, features, overlapping, wx, wy=None):
     for i, feature in features.iterrows():
         if i in overlapping:
             color = '#ff0000'  # red
-            count += 1
         else:
             color = '#00ff00'  # green
+            count += 1
         p = Rectangle((feature['x']-wx/2, feature['y']-wy/2),
                       wx, wy, facecolor='none', lw=1, edgecolor=color)
         ax.add_patch(p)
