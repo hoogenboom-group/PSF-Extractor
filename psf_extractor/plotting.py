@@ -221,20 +221,18 @@ def plot_overlapping_features(mip, features, overlapping, wx, wy=None):
     ax.set_title(title)
 
 
-from psf_extractor import gaussian_1D, fit_gaussian_1D
-
 def plot_psf(psf, psx, psy, psz):
     """Fancy PSF plot."""
 
     # Create figure and axes
     fig = plt.figure(figsize=(11, 11))
-    gs = fig.add_gridspec(6, 6)
+    gs = fig.add_gridspec(9, 9)
     ax_xy = fig.add_subplot(gs[:3,:3])
     ax_yz = fig.add_subplot(gs[:3,3:])
     ax_xz = fig.add_subplot(gs[3:,:3])
-    ax_z = fig.add_subplot(gs[-3,3:])
-    ax_y = fig.add_subplot(gs[-2,3:])
-    ax_x = fig.add_subplot(gs[-1,3:])
+    ax_z = fig.add_subplot(gs[3:5,3:])
+    ax_y = fig.add_subplot(gs[5:7,3:])
+    ax_x = fig.add_subplot(gs[7:9,3:])
 
     # PSF dimensions
     Nz, Ny, Nx = psf.shape
@@ -244,13 +242,23 @@ def plot_psf(psf, psx, psy, psz):
     z0, y0, x0 = Nz//2, Ny//2, Nx//2
 
     # --- 2D Plots ---
+    # Figure out extents
+    dz_corr_y = 2 * dy
+    dz_corr_x = 2 * dx
+    crop_yz = int((dz - dz_corr_y) / (2*psz*1e-3))
+    crop_xz = int((dz - dz_corr_x) / (2*psz*1e-3))
     # Plot 2D PSFs
     ax_xy.imshow(psf[z0,:,:], cmap=fire, interpolation='none',
-                 extent=[-dx/2, dx/2, -dy/2, dy/2])
-    ax_yz.imshow(psf[:,y0,:].T, cmap=fire, interpolation='none',
-                 extent=[-dz/2, dz/2, -dy/2, dy/2])
-    ax_xz.imshow(psf[:,:,x0], cmap=fire, interpolation='none',
-                 extent=[-dx/2, dx/2, -dz/2, dz/2])
+                 extent=[-dx/2, dx/2, -dy/2, dy/2],
+                 aspect='equal')
+    psf_y0 = psf[crop_yz:-crop_yz, y0, :].T
+    ax_yz.imshow(psf_y0, cmap=fire, interpolation='none',
+                 extent=[-dz_corr_y/2, dz_corr_y/2, -dy/2, dy/2],
+                 aspect=1)
+    psf_x0 = psf[crop_xz:-crop_xz, :, x0]
+    ax_xz.imshow(psf_x0, cmap=fire, interpolation='none',
+                 extent=[-dx/2, dx/2, -dz_corr_x/2, dz_corr_x/2],
+                 aspect=1)
 
     # --- 1D Plots ---
     # 1D PSFs (slices)
