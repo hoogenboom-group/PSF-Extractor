@@ -207,12 +207,17 @@ def plot_overlapping_features(mip, features, overlapping, wx, wy=None):
     # Plot MIP
     ax.imshow(mip_log, cmap=fire)
     # Plot bboxes of overlapping and nonoverlapping features
+    count = 0
     for i, feature in features.iterrows():
-        color = '#ff0000' if i in overlapping else '#00ff00'
+        if i in overlapping:
+            color = '#ff0000'  # red
+            count += 1
+        else:
+            color = '#00ff00'  # green
         p = Rectangle((feature['x']-wx/2, feature['y']-wy/2),
                       wx, wy, facecolor='none', lw=1, edgecolor=color)
         ax.add_patch(p)
-    title = f'Overlapping features: {overlapping.size:.0f}/{len(features):.0f}'
+    title = f'Non-overlapping features: {count:.0f}/{len(features):.0f}'
     ax.set_title(title)
 
 
