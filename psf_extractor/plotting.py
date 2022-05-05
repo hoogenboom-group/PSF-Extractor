@@ -241,29 +241,30 @@ def plot_psf(psf, psx, psy, psz):
     z0, y0, x0 = Nz//2, Ny//2, Nx//2
 
     # --- 2D Plots ---
-    # Figure out extents
-    dz_corr_y = 2 * dy
-    dz_corr_x = 2 * dx
-    crop_yz = int((dz - dz_corr_y) / (2*psz*1e-3))
-    crop_xz = int((dz - dz_corr_x) / (2*psz*1e-3))
+    # Determine cropping margin
+    crop_yz = int((dz - 2*dy) / (2*psz*1e-3)) if dz > 2*dy else \
+              int((2*dy - dz) / (4*psy*1e-3))
+    crop_xz = int((dz - 2*dx) / (2*psz*1e-3)) if dz > 2*dx else \
+              int((2*dx - dz) / (4*psx*1e-3))
+    # Crop 2D PSFs to 2:1 aspect ratio
+    psf_z0 = psf[z0, :, :]
+    psf_y0 = psf[crop_yz:-crop_yz, y0, :] if dz > 2*dy else \
+             psf[:, y0, crop_yz:-crop_yz]
+    psf_x0 = psf[crop_xz:-crop_xz, :, x0].T if dz > 2*dx else \
+             psf[:, crop_xz:-crop_xz, x0].T
     # Plot 2D PSFs
-    ax_xy.imshow(psf[z0,:,:], cmap=fire, interpolation='none',
-                 extent=[-dx/2, dx/2, -dy/2, dy/2],
-                 aspect='equal')
-    psf_y0 = psf[crop_yz:-crop_yz, y0, :].T
-    ax_yz.imshow(psf_y0, cmap=fire, interpolation='none',
-                 extent=[-dz_corr_y/2, dz_corr_y/2, -dy/2, dy/2],
-                 aspect=1)
-    psf_x0 = psf[crop_xz:-crop_xz, :, x0]
-    ax_xz.imshow(psf_x0, cmap=fire, interpolation='none',
-                 extent=[-dx/2, dx/2, -dz_corr_x/2, dz_corr_x/2],
-                 aspect=1)
+    ax_xy.imshow(psf_z0, cmap=fire, interpolation='none',  # aspect=psy/psx ???
+                 extent=[-dx/2, dx/2, -dy/2, dy/2])
+    ax_yz.imshow(psf_y0, cmap=fire, interpolation='none',  # aspect=psy/psz ???
+                 extent=[-dy, dy, -dy/2, dy/2])
+    ax_xz.imshow(psf_x0, cmap=fire, interpolation='none',  # aspect=psz/psx ???
+                 extent=[-dx/2, dx/2, -dx, dx])
 
     # --- 1D Plots ---
     # 1D PSFs (slices)
-    prof_z = psf[:,y0,x0]
-    prof_y = psf[z0,:,x0]
-    prof_x = psf[z0,y0,:]
+    prof_z = psf[:, y0, x0]
+    prof_y = psf[z0, :, x0]
+    prof_x = psf[z0, y0, :]
     # 1D Axes
     z = np.linspace(-dz/2, dz/2, prof_z.size)
     y = np.linspace(-dy/2, dy/2, prof_y.size)
@@ -322,9 +323,8 @@ def plot_psf(psf, psx, psy, psz):
     ax_xz.set_xlabel('X [μm]')
     ax_xz.set_ylabel('Z [μm]')
     # 1D Axes
-    ax_z.set_xlabel('Z [μm]')
-    ax_y.set_xlabel('Y [μm]')
-    ax_x.set_xlabel('X [μm]')
+    ax_x.set_xlabel('Distance [μm]')
+    [ax.set_xlim(-dy*1.1, dy*1.1) for ax in [ax_z, ax_y, ax_x]]
     # Miscellaneous
     [ax.legend(loc='upper right') for ax in [ax_z, ax_y, ax_x]]
     [ax.grid(ls=':') for ax in [ax_z, ax_y, ax_x]]
