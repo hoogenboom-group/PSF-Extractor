@@ -1,12 +1,11 @@
 import numpy as np
 import trackpy
-from skimage import exposure
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from .extractor import get_mip, get_min_masses, crop_psf
+from .extractor import get_mip, get_min_masses
 from .gauss import gaussian_1D, fit_gaussian_1D, guess_gaussian_1D_params
 from .util import get_Daans_special_cmap, is_notebook
 
