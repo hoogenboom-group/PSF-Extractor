@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 DISTNAME = 'PSF-Extractor'
 DESCRIPTION = 'PSF-Extractor: Characterize the PSF of an optical setup'
