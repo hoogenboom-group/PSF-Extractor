@@ -13,10 +13,6 @@ else:
     from tqdm import tqdm
 
 
-__all__ = ['pfit_features_in_stack',
-           ]
-
-
 def pfit_features_in_stack(stack, features, width=None, theta=None,
                                    num_cores=4):
     """Parallelized version of `fit_features_in_stack' 

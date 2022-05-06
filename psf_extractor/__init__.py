@@ -1,5 +1,9 @@
-from .extractor import *
-from .gauss import *
+from . import extractor
+from . import gauss
+from . import parallel
+
 from .plotting import *
 from .util import *
-from .parallel import *
+
+__version__ = '0.2'
+__all__ = ['extractor', 'gauss', 'parallel']
