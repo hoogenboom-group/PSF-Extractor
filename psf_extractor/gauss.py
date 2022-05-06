@@ -2,17 +2,17 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 
-# __all__ = [
-#     'gaussian_1D',
-#     'gaussian_2D',
-#     'super_gaussian_1D',
-#     'elliptical_gaussian_2D',
-#     'super_elliptical_gaussian_2D',
-#     'fit_gaussian_1D',
-#     'fit_gaussian_2D',
-#     'guess_gaussian_1D_params',
-#     'guess_gaussian_2D_params'
-# ]
+__all__ = [
+    'gaussian_1D',
+    'gaussian_2D',
+    'super_gaussian_1D',
+    'elliptical_gaussian_2D',
+    'super_elliptical_gaussian_2D',
+    'fit_gaussian_1D',
+    'fit_gaussian_2D',
+    'guess_gaussian_1D_params',
+    'guess_gaussian_2D_params'
+]
 
 
 def gaussian_1D(x, x0, sigma_x, A, B):

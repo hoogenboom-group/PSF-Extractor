@@ -34,20 +34,20 @@ MEM_TOT = psutil.virtual_memory().total / 1e9
 MEM_FREE = psutil.virtual_memory().free / 1e9
 
 
-# __all__ = ['load_stack',
-#            'get_mip',
-#            'get_min_masses',
-#            'get_max_masses',
-#            'detect_overlapping_features',
-#            'detect_edge_features',
-#            'extract_psfs',
-#            'detect_outlier_psfs',
-#            'localize_psf',
-#            'localize_psfs',
-#            'align_psfs',
-#            'crop_psf',
-#            'fit_features_in_stack',
-#            'get_theta']
+__all__ = ['load_stack',
+           'get_mip',
+           'get_min_masses',
+           'get_max_masses',
+           'detect_overlapping_features',
+           'detect_edge_features',
+           'extract_psfs',
+           'detect_outlier_psfs',
+           'localize_psf',
+           'localize_psfs',
+           'align_psfs',
+           'crop_psf',
+           'fit_features_in_stack',
+           'get_theta']
 
 
 def load_stack(file_pattern):
