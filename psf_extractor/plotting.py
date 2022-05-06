@@ -236,29 +236,27 @@ def plot_psf(psf, psx, psy, psz):
     # PSF dimensions
     Nz, Ny, Nx = psf.shape
     # PSF volume [μm]
-    dz, dy, dx = 1e-3*psz*Nz, 1e-3*psy*Ny, 1e-3*psx*Nx
+    wz, wy, wx = 1e-3*psz*Nz, 1e-3*psy*Ny, 1e-3*psx*Nx
     # PSF center coords
     z0, y0, x0 = Nz//2, Ny//2, Nx//2
 
     # --- 2D Plots ---
     # Determine cropping margin
-    crop_yz = int((dz - 2*dy) / (2*psz*1e-3)) if dz > 2*dy else \
-              int((2*dy - dz) / (4*psy*1e-3))
-    crop_xz = int((dz - 2*dx) / (2*psz*1e-3)) if dz > 2*dx else \
-              int((2*dx - dz) / (4*psx*1e-3))
+    crop_yz = int((wz - 2*wy) / (2*psz*1e-3)) if wz > 2*wy else None
+    crop_xz = int((wz - 2*wx) / (2*psz*1e-3)) if wz > 2*wx else None
     # Crop 2D PSFs to 2:1 aspect ratio
     psf_z0 = psf[z0, :, :]
-    psf_y0 = psf[crop_yz:-crop_yz, y0, :] if dz > 2*dy else \
-             psf[:, y0, crop_yz:-crop_yz]
-    psf_x0 = psf[crop_xz:-crop_xz, :, x0].T if dz > 2*dx else \
-             psf[:, crop_xz:-crop_xz, x0].T
+    psf_y0 = psf[crop_yz:-crop_yz, y0, :] if wz > 2*wy else psf[:, y0, :]
+    psf_x0 = psf[crop_xz:-crop_xz, :, x0] if wz > 2*wx else psf[:, :, x0]
+    # Update extent (after cropping)
+    wz_cropped = psf_y0.shape[0] * 1e-3*psz
     # Plot 2D PSFs
-    ax_xy.imshow(psf_z0, cmap=fire, interpolation='none',  # aspect=psy/psx ???
-                 extent=[-dx/2, dx/2, -dy/2, dy/2])
-    ax_yz.imshow(psf_y0, cmap=fire, interpolation='none',  # aspect=psy/psz ???
-                 extent=[-dy, dy, -dy/2, dy/2])
-    ax_xz.imshow(psf_x0, cmap=fire, interpolation='none',  # aspect=psz/psx ???
-                 extent=[-dx/2, dx/2, -dx, dx])
+    ax_xy.imshow(psf_z0, cmap=fire, interpolation='none',
+                 extent=[-wx/2, wx/2, -wy/2, wy/2])
+    ax_yz.imshow(psf_y0.T, cmap=fire, interpolation='none',
+                 extent=[-wz_cropped/2, wz_cropped/2, -wy/2, wy/2])
+    ax_xz.imshow(psf_x0, cmap=fire, interpolation='none',
+                 extent=[-wx/2, wx/2, -wz_cropped/2, wz_cropped/2])
 
     # --- 1D Plots ---
     # 1D PSFs (slices)
@@ -266,9 +264,9 @@ def plot_psf(psf, psx, psy, psz):
     prof_y = psf[z0, :, x0]
     prof_x = psf[z0, y0, :]
     # 1D Axes
-    z = np.linspace(-dz/2, dz/2, prof_z.size)
-    y = np.linspace(-dy/2, dy/2, prof_y.size)
-    x = np.linspace(-dx/2, dx/2, prof_x.size)
+    z = np.linspace(-wz/2, wz/2, prof_z.size)
+    y = np.linspace(-wy/2, wy/2, prof_y.size)
+    x = np.linspace(-wx/2, wx/2, prof_x.size)
     # Do 1D PSF fits
     popt_z = fit_gaussian_1D(prof_z, z, p0=guess_gaussian_1D_params(prof_z, z))
     popt_y = fit_gaussian_1D(prof_y, y, p0=guess_gaussian_1D_params(prof_y, y))
@@ -324,7 +322,7 @@ def plot_psf(psf, psx, psy, psz):
     ax_xz.set_ylabel('Z [μm]')
     # 1D Axes
     ax_x.set_xlabel('Distance [μm]')
-    [ax.set_xlim(-dy*1.1, dy*1.1) for ax in [ax_z, ax_y, ax_x]]
+    [ax.set_xlim(-wy*1.1, wy*1.1) for ax in [ax_z, ax_y, ax_x]]
     # Miscellaneous
     [ax.legend(loc='upper right') for ax in [ax_z, ax_y, ax_x]]
     [ax.grid(ls=':') for ax in [ax_z, ax_y, ax_x]]
