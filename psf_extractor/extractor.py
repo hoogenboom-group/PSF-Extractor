@@ -429,7 +429,7 @@ def extract_psfs(stack, features, shape, return_indices=False):
                       int(x + wx/2))
 
         # Determine if feature is along the edge of the image stack
-        if (x1 < 0) or (y1 < 0) or (x2 > stack.shape[2]) or (y2 > stack.shape[1]):
+        if (x1 <= 0) or (y1 <= 0) or (x2 > stack.shape[2]) or (y2 > stack.shape[1]):
             edge_features.append(i)
         # Extract PSF
         else:
