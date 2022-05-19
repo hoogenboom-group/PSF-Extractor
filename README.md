@@ -24,7 +24,7 @@ $ conda activate psf
 ### To run in a Jupyter notebook
 * (Optional) environment setup for enlightened folk
 ```
-(psf) $ conda install -c conda-forge nodejs=15
+(psf) $ conda install -c conda-forge nodejs
 (psf) $ pip install tqdm ipympl ipywidgets imagecodecs
 (psf) $ jupyter labextension install @jupyter-widgets/jupyterlab-manager
 (psf) $ jupyter labextension install jupyter-matplotlib
