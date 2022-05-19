@@ -9,12 +9,12 @@ class TestStack:
     def test_list_tif(self):
         # List of tif files from data module
         file_pattern = [
-            './data/sample_zstack_tif_sequence/00.tif',
-            './data/sample_zstack_tif_sequence/01.tif',
-            './data/sample_zstack_tif_sequence/02.tif',
-            './data/sample_zstack_tif_sequence/03.tif',
-            './data/sample_zstack_tif_sequence/04.tif',
-            './data/sample_zstack_tif_sequence/05.tif',
+            './data/sample_zstack/sample_zstack_00.tif',
+            './data/sample_zstack/sample_zstack_01.tif',
+            './data/sample_zstack/sample_zstack_02.tif',
+            './data/sample_zstack/sample_zstack_03.tif',
+            './data/sample_zstack/sample_zstack_04.tif',
+            './data/sample_zstack/sample_zstack_05.tif',
         ]
         # Create stack
         stack = load_stack(file_pattern)
