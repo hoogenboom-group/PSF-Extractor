@@ -399,6 +399,9 @@ def extract_psfs(stack, features, shape, return_indices=False):
     # Round up to nearest odd integer --> results in all extracted PSFs
     # having the same shape
     wz, wy, wx = np.ceil([wz, wy, wx]).astype(int) // 2 * 2 + 1
+    if wz > stack.shape[0]: 
+        logging.warn(f'Chosen PSF window z size ({wz} px) is larger '
+                     f'than stack z size ({stack.shape[0]} px).')
 
     # Iterate through features
     psfs = []  # collect PSFs
