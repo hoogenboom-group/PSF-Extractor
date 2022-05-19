@@ -19,7 +19,7 @@ class TestStack:
         # Create stack
         stack = load_stack(file_pattern)
         # Known shape
-        assert stack.shape == (34, 2048, 2048)
+        assert stack.shape == (6, 2048, 2048)
 
     def test_directory_tif(self):
         # Path to png stack directory
