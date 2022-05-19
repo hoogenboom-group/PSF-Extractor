@@ -284,22 +284,25 @@ def plot_psf(psf, psx, psy, psz):
     # --- FWHM arrows ---
     # Z
     x0 = popt_z[0]
-    y0 = (popt_z[2] - popt_z[3])/2
+    y0 = 0.65*(popt_z[2] + popt_z[3])
     fwhm = np.abs(2.355 * popt_z[1])
-    ax_z.annotate('', xy=(x0-fwhm/2, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-|>'})
-    ax_z.text(x0, prof_z.max()/3.5, f'{1e3*fwhm:.0f}nm', ha='center')
+    ax_z.annotate('', xy=(x0-fwhm/2-0.5, y0), xytext=(x0-fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
+    ax_z.annotate('', xy=(x0+fwhm/2+0.5, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
+    ax_z.text(x0,popt_z[3], f'{1e3*fwhm:.0f}nm', ha='center')
     # Y
     x0 = popt_y[0]
-    y0 = (popt_y[2] - popt_y[3])/2
+    y0 = 0.65*(popt_y[2] + popt_y[3])
     fwhm = np.abs(2.355 * popt_y[1])
-    ax_y.annotate('', xy=(x0-fwhm/2, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-|>'})
-    ax_y.text(x0, prof_y.max()/3.5, f'{1e3*fwhm:.0f}nm', ha='center')
+    ax_y.annotate('', xy=(x0-fwhm/2-0.5, y0), xytext=(x0-fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
+    ax_y.annotate('', xy=(x0+fwhm/2+0.5, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
+    ax_y.text(x0, popt_z[3], f'{1e3*fwhm:.0f}nm', ha='center')
     # X
     x0 = popt_x[0]
-    y0 = (popt_x[2] - popt_x[3])/2
+    y0 = 0.65*(popt_x[2] + popt_x[3])
     fwhm = np.abs(2.355 * popt_x[1])
-    ax_x.annotate('', xy=(x0-fwhm/2, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-|>'})
-    ax_x.text(x0, prof_x.max()/3.5, f'{1e3*fwhm:.0f}nm', ha='center')
+    ax_x.annotate('', xy=(x0-fwhm/2-0.5, y0), xytext=(x0-fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
+    ax_x.annotate('', xy=(x0+fwhm/2+0.5, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
+    ax_x.text(x0, popt_z[3], f'{1e3*fwhm:.0f}nm', ha='center')
 
     # --- Aesthetics ---
     # XY projection

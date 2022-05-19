@@ -7,7 +7,7 @@ from itertools import combinations
 import numpy as np
 from scipy.stats import pearsonr
 import pandas as pd
-from skimage import io, exposure
+from skimage import io, exposure, measure
 
 from .util import natural_sort, bboxes_overlap, is_notebook
 from .gauss import fit_gaussian_2D, fit_gaussian_1D
@@ -16,7 +16,7 @@ from .gauss import fit_gaussian_2D, fit_gaussian_1D
 # Check for dask
 try:
     import dask.array as da
-    from dask_image.imread import imread
+    from dask.array.image import imread
     _has_dask = True
 except ImportError:
     logging.warn("Dask not installed. No support for large (> RAM) stacks.")
@@ -33,7 +33,6 @@ N_CORES = multiprocessing.cpu_count()
 MEM_TOT = psutil.virtual_memory().total / 1e9
 MEM_FREE = psutil.virtual_memory().free / 1e9
 
-
 __all__ = ['load_stack',
            'get_mip',
            'get_min_masses',
@@ -46,6 +45,7 @@ __all__ = ['load_stack',
            'localize_psfs',
            'align_psfs',
            'crop_psf',
+           'downsample_psf',
            'fit_features_in_stack',
            'get_theta']
 
@@ -86,14 +86,15 @@ def load_stack(file_pattern):
     # If a list of file names is provided
     if isinstance(file_pattern, list):
         logging.info("Creating stack from list of filenames.")
-        images = []
+        stack = []
         for i, fp in tqdm(enumerate(file_pattern),
                           total=len(file_pattern)):
             logging.debug(f"Reading image file ({i+1}/{len(file_pattern)}) : {fp}")
             image = io.imread(fp, plugin='pil')
-            images.append(image)
+            stack.append(image)
+            
         # Create 3D image stack (Length, Height, Width)
-        stack = np.stack(images, axis=0)
+        stack = np.stack(stack, axis=0)
 
     # If a directory or individual filename
     elif isinstance(file_pattern, str):
@@ -107,14 +108,14 @@ def load_stack(file_pattern):
             # Sort filepaths
             filepaths = natural_sort([fp.as_posix() for fp in filepaths])
             # Load images
-            images = []
+            stack = []
             for i, fp in tqdm(enumerate(filepaths),
                               total=len(filepaths)):
                 logging.debug(f"Reading image file ({i+1}/{len(filepaths)}) : {fp}")
                 image = io.imread(fp, plugin='pil')
-                images.append(image)
+                stack.append(image)
             # Create 3D image stack (Length, Height, Width)
-            stack = np.stack(images, axis=0)
+            stack = np.stack(stack, axis=0)
 
         # Tiff stack or gif
         elif (Path(file_pattern).suffix == '.tif') or \
@@ -137,11 +138,17 @@ def load_stack(file_pattern):
                         "filename of an image stack as either a <list> or <str>, "
                         f"not {type(file_pattern)}.")
 
+    # Intensity rescaling (0 to 1 in float32)
+    # Based on https://github.com/scikit-image/scikit-image/blob/main/skimage/exposure/exposure.py
+    # Avoids additional float64 memmory allocation for data
+    stack = stack.astype(np.float32)
+    imin, imax = np.min(stack), np.max(stack)
+    stack = np.clip(stack, imin, imax)
+    stack -= imin
+    stack /= (imax - imin)
     # Return stack
     logging.info(f"{stack.shape} image stack created succesfully.")
-    stack = exposure.rescale_intensity(stack, out_range=np.float32)
     return stack
-
 
 def get_mip(stack, normalize=True, log=False, clip_pct=0, axis=0):
     """Compute the maximum intensity projection along the given axis.
@@ -464,7 +471,6 @@ def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False):
     # Iterate through every (unique) pair of PSFs
     ij = list(combinations(range(len(psfs)), 2))
     for i, j in tqdm(ij, total=len(ij)):
-
         # Get pairs of PSFs
         mip_i = np.max(psfs[i], axis=0)
         mip_j = np.max(psfs[j], axis=0)
@@ -487,8 +493,7 @@ def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False):
 
         # Determine frequency of out lying (?)
         i, counts = np.unique(suspects_ij, return_counts=True)
-        outliers = i[counts > 3*counts.mean()]
-
+        outliers = i[counts > (pcc_min-0.1)*len(psfs)]
     if return_pccs:
         return outliers, pccs
     return outliers
@@ -638,6 +643,12 @@ def crop_psf(psf, psx=None, psy=None, psz=None):
 
     return psf_cube
 
+def downsample_psf(psf_sum, upsample_factor=2):
+    psf = measure.block_reduce(psf_sum,
+                               block_size=(upsample_factor,)*psf_sum.ndim,
+                               func=np.mean,
+                               cval=np.mean(psf_sum))
+    return psf
 
 def fit_features_in_stack(stack, features, width=None, theta=None):
     """Fit 2D gaussian to each slice in stack. XY positions
