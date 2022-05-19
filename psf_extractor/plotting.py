@@ -1,13 +1,12 @@
 import numpy as np
 import trackpy
-from skimage import exposure
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from .extractor import get_mip, get_min_masses, crop_psf
-from .gauss import gaussian_1D, fit_gaussian_1D
+from .extractor import get_mip, get_min_masses
+from .gauss import gaussian_1D, fit_gaussian_1D, guess_gaussian_1D_params
 from .util import get_Daans_special_cmap, is_notebook
 
 if is_notebook():
@@ -207,12 +206,17 @@ def plot_overlapping_features(mip, features, overlapping, wx, wy=None):
     # Plot MIP
     ax.imshow(mip_log, cmap=fire)
     # Plot bboxes of overlapping and nonoverlapping features
+    count = 0
     for i, feature in features.iterrows():
-        color = '#ff0000' if i in overlapping else '#00ff00'
+        if i in overlapping:
+            color = '#ff0000'  # red
+        else:
+            color = '#00ff00'  # green
+            count += 1
         p = Rectangle((feature['x']-wx/2, feature['y']-wy/2),
                       wx, wy, facecolor='none', lw=1, edgecolor=color)
         ax.add_patch(p)
-    title = f'Overlapping features: {overlapping.size:.0f}/{len(features):.0f}'
+    title = f'Non-overlapping features: {count:.0f}/{len(features):.0f}'
     ax.set_title(title)
 
 
@@ -221,43 +225,52 @@ def plot_psf(psf, psx, psy, psz):
 
     # Create figure and axes
     fig = plt.figure(figsize=(11, 11))
-    gs = fig.add_gridspec(6, 6)
+    gs = fig.add_gridspec(9, 9)
     ax_xy = fig.add_subplot(gs[:3,:3])
     ax_yz = fig.add_subplot(gs[:3,3:])
     ax_xz = fig.add_subplot(gs[3:,:3])
-    ax_z = fig.add_subplot(gs[-3,3:])
-    ax_y = fig.add_subplot(gs[-2,3:])
-    ax_x = fig.add_subplot(gs[-1,3:])
+    ax_z = fig.add_subplot(gs[3:5,3:])
+    ax_y = fig.add_subplot(gs[5:7,3:])
+    ax_x = fig.add_subplot(gs[7:9,3:])
 
     # PSF dimensions
     Nz, Ny, Nx = psf.shape
     # PSF volume [μm]
-    dz, dy, dx = 1e-3*psz*Nz, 1e-3*psy*Ny, 1e-3*psx*Nx
+    wz, wy, wx = 1e-3*psz*Nz, 1e-3*psy*Ny, 1e-3*psx*Nx
     # PSF center coords
     z0, y0, x0 = Nz//2, Ny//2, Nx//2
 
     # --- 2D Plots ---
+    # Determine cropping margin
+    crop_yz = int((wz - 2*wy) / (2*psz*1e-3)) if wz > 2*wy else None
+    crop_xz = int((wz - 2*wx) / (2*psz*1e-3)) if wz > 2*wx else None
+    # Crop 2D PSFs to 2:1 aspect ratio
+    psf_z0 = psf[z0, :, :]
+    psf_y0 = psf[crop_yz:-crop_yz, y0, :] if wz > 2*wy else psf[:, y0, :]
+    psf_x0 = psf[crop_xz:-crop_xz, :, x0] if wz > 2*wx else psf[:, :, x0]
+    # Update extent (after cropping)
+    wz_cropped = psf_y0.shape[0] * 1e-3*psz
     # Plot 2D PSFs
-    ax_xy.imshow(psf[z0,:,:], cmap=fire, interpolation='none',
-                 extent=[-dx/2, dx/2, -dy/2, dy/2])
-    ax_yz.imshow(psf[:,y0,:].T, cmap=fire, interpolation='none',
-                 extent=[-dz/2, dz/2, -dy/2, dy/2])
-    ax_xz.imshow(psf[:,:,x0], cmap=fire, interpolation='none',
-                 extent=[-dx/2, dx/2, -dz/2, dz/2])
+    ax_xy.imshow(psf_z0, cmap=fire, interpolation='none',
+                 extent=[-wx/2, wx/2, -wy/2, wy/2])
+    ax_yz.imshow(psf_y0.T, cmap=fire, interpolation='none',
+                 extent=[-wz_cropped/2, wz_cropped/2, -wy/2, wy/2])
+    ax_xz.imshow(psf_x0, cmap=fire, interpolation='none',
+                 extent=[-wx/2, wx/2, -wz_cropped/2, wz_cropped/2])
 
     # --- 1D Plots ---
     # 1D PSFs (slices)
-    prof_z = psf[:,y0,x0]
-    prof_y = psf[z0,:,x0]
-    prof_x = psf[z0,y0,:]
+    prof_z = psf[:, y0, x0]
+    prof_y = psf[z0, :, x0]
+    prof_x = psf[z0, y0, :]
     # 1D Axes
-    z = np.linspace(-dz/2, dz/2, prof_z.size)
-    y = np.linspace(-dy/2, dy/2, prof_y.size)
-    x = np.linspace(-dx/2, dx/2, prof_x.size)
+    z = np.linspace(-wz/2, wz/2, prof_z.size)
+    y = np.linspace(-wy/2, wy/2, prof_y.size)
+    x = np.linspace(-wx/2, wx/2, prof_x.size)
     # Do 1D PSF fits
-    popt_z = fit_gaussian_1D(prof_z, z, p0=[0, 1, 1, 0])
-    popt_y = fit_gaussian_1D(prof_y, y, p0=[0, 1, 1, 0])
-    popt_x = fit_gaussian_1D(prof_x, x, p0=[0, 1, 1, 0])
+    popt_z = fit_gaussian_1D(prof_z, z, p0=guess_gaussian_1D_params(prof_z, z))
+    popt_y = fit_gaussian_1D(prof_y, y, p0=guess_gaussian_1D_params(prof_y, y))
+    popt_x = fit_gaussian_1D(prof_x, x, p0=guess_gaussian_1D_params(prof_x, x))
     # Plot 1D PSFs
     plot_kwargs = {'ms': 5, 'marker': 'o', 'ls': '', 'alpha': 0.75}
     ax_z.plot(z, prof_z, c='C1', label='Z', **plot_kwargs)
@@ -308,9 +321,8 @@ def plot_psf(psf, psx, psy, psz):
     ax_xz.set_xlabel('X [μm]')
     ax_xz.set_ylabel('Z [μm]')
     # 1D Axes
-    ax_z.set_xlabel('Z [μm]')
-    ax_y.set_xlabel('Y [μm]')
-    ax_x.set_xlabel('X [μm]')
+    ax_x.set_xlabel('Distance [μm]')
+    [ax.set_xlim(-wy*1.1, wy*1.1) for ax in [ax_z, ax_y, ax_x]]
     # Miscellaneous
     [ax.legend(loc='upper right') for ax in [ax_z, ax_y, ax_x]]
     [ax.grid(ls=':') for ax in [ax_z, ax_y, ax_x]]

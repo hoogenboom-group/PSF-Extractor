@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 DISTNAME = 'PSF-Extractor'
 DESCRIPTION = 'PSF-Extractor: Characterize the PSF of an optical setup'
@@ -7,7 +7,7 @@ MAINTAINER_EMAIL = 'r.i.lane@tudelft.nl'
 LICENSE = 'LICENSE'
 README = 'README.md'
 URL = 'https://github.com/hoogenboom-group/PSF-Extractor'
-VERSION = '0.1.dev'
+VERSION = '0.2'
 PACKAGES = ['psf_extractor']
 INSTALL_REQUIRES = [
     'numpy',

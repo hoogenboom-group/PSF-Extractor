@@ -85,7 +85,7 @@ def guess_gaussian_1D_params(y, x=None):
     # Estimate x0
     x0 = x[y.argmax()]
     # Estimate sigma_x
-    xs = x[y > y.max()/2]  # threshold at half-maximum
+    xs = x[y > (y.max() + y.min())/2]  # threshold at half-maximum
     # sigma = FWHM / (2*sqrt(2*ln(2)))
     sigma_x = (xs.max() - xs.min()) / 2.355
     # Estimates for amplitude and background
