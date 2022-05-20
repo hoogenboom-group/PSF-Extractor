@@ -48,8 +48,9 @@ __all__ = ['load_stack',
            'crop_psf',
            'downsample_psf',
            'fit_features_in_stack',
-           'get_theta'
-           'save_stack']
+           'get_theta',
+           'save_stack',
+           'eight_bit_as']
 
 
 def load_stack(file_pattern):
