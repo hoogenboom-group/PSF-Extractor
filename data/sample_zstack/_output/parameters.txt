@@ -1,0 +1,5 @@
+stack parameters:
+
+X: 21.6 nm
+Y: 21.6 nm
+Z: 60.0 nm

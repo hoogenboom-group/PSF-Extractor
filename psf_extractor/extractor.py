@@ -12,6 +12,7 @@ from skimage import io, exposure, measure
 from .util import natural_sort, bboxes_overlap, is_notebook
 from .gauss import fit_gaussian_2D, fit_gaussian_1D
 
+import tifffile
 
 # Check for dask
 try:
@@ -47,7 +48,8 @@ __all__ = ['load_stack',
            'crop_psf',
            'downsample_psf',
            'fit_features_in_stack',
-           'get_theta']
+           'get_theta'
+           'save_stack']
 
 
 def load_stack(file_pattern):
@@ -751,3 +753,98 @@ def get_theta(psf, fit_range=10):
     theta = np.mean([popt0[4], popt1[4]])
 
     return theta
+    
+
+def save_stack(psf, file_pattern,psx,psy,psz,usf):
+    """Save PSF to file, along with metadata of stack.
+    
+    Parameters
+    ----------
+    psf: array-like
+        Image stack of shape (L, M, N)
+        
+    file_pattern : list or str
+        Either a list of filenames or a string that is either:
+        a) the individual filename of e.g. a tiff stack or
+        b) a directory from which all images will be loaded into the stack
+        
+    Returns
+    -------
+    ...
+    
+    Notes
+    -----
+    Not tested on multiple files, but should in principle work.
+    
+    """
+   
+    if isinstance(file_pattern, list):  # In case a list of files is provided
+        location = str(Path(file_pattern[0]).parent) + "/_output"
+        fp  = Path(location)
+        fp.mkdir(exist_ok=True)
+        #if not os.path.exists(location): os.makedirs(location)
+        #save psf to file
+        tifffile.imwrite(location + "/psf_av.tif",eight_bit_as(psf,np.uint8),photometric='minisblack')
+            
+        #save meta data
+        with open(location + '/parameters.txt','w') as f:
+            f.write('stack parameters:\n')
+            f.write('\n')
+            f.write('X: '+str(psx/usf)+' nm\n')
+            f.write('Y: '+str(psy/usf)+' nm\n')
+            f.write('Z: '+str(psz/usf)+' nm\n')
+    
+    # If a single directory or multipage tiff is provided
+    elif isinstance(file_pattern, str):
+        if file_pattern[-1] == "/" or file_pattern[-1] == "\\": #directory!
+            location = file_pattern + '_output'
+            fp  = Path(location)
+            fp.mkdir(exist_ok=True) #make output directory if not there
+        else:    #file!
+            location = str(Path(file_pattern).parent) + "/_output"
+            fp  = Path(location)
+            fp.mkdir(exist_ok=True) #make output directory if not there
+        
+        #save psf to file
+        tifffile.imwrite(location + "/psf_av.tif",eight_bit_as(psf,np.uint8),photometric='minisblack')
+        
+        #save meta data
+        with open(location + '/parameters.txt','w') as f:
+            f.write('stack parameters:\n')
+            f.write('\n')
+            f.write('X: '+str(psx/usf)+' nm\n')
+            f.write('Y: '+str(psy/usf)+' nm\n')
+            f.write('Z: '+str(psz/usf)+' nm\n')
+    
+    print("Succesfully saved PSF and parameters to file.")
+    
+    return
+
+def eight_bit_as(arr, dtype=np.float32):
+    """Convert array to 8 bit integer array.
+    
+    Parameters
+    ----------
+    arr: array-like
+        Array of shape (L, M, N)
+        
+    dtype : data type
+        Data type of existing array.
+        
+    Returns
+    -------
+    arr.astype(dtype) : array-like
+        Array formatted to 8 bit integer array
+    
+    Notes
+    -----
+    ...
+    """
+    
+    if arr.dtype != np.uint8:
+        arr = arr.astype(np.float32)
+        arr -= arr.min()
+        arr *= 255./arr.max()
+    else: 
+        arr = arr.astype(np.float32)
+    return arr.astype(dtype)
