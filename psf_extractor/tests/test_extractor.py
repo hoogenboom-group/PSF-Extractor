@@ -9,17 +9,17 @@ class TestStack:
     def test_list_tif(self):
         # List of tif files from data module
         file_pattern = [
-            './data/sample_zstack/sample_zstack_00.tif',
-            './data/sample_zstack/sample_zstack_01.tif',
-            './data/sample_zstack/sample_zstack_02.tif',
-            './data/sample_zstack/sample_zstack_03.tif',
-            './data/sample_zstack/sample_zstack_04.tif',
-            './data/sample_zstack/sample_zstack_05.tif',
+            './data/sample_zstack/sample_zstack00.tif',
+            './data/sample_zstack/sample_zstack01.tif',
+            './data/sample_zstack/sample_zstack02.tif',
+            './data/sample_zstack/sample_zstack03.tif',
+            './data/sample_zstack/sample_zstack04.tif',
+            './data/sample_zstack/sample_zstack05.tif',
         ]
         # Create stack
         stack = load_stack(file_pattern)
         # Known shape
-        assert stack.shape == (6, 2048, 2048)
+        assert stack.shape == (6, 512, 512)
 
     def test_directory_tif(self):
         # Path to png stack directory
@@ -27,7 +27,7 @@ class TestStack:
         # Create stack
         stack = load_stack(file_pattern)
         # Known shape
-        assert stack.shape == (34, 2048, 2048)
+        assert stack.shape == (34, 512, 512)
 
 
 class TestMassFiltering:
