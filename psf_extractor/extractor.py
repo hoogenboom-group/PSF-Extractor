@@ -50,7 +50,8 @@ __all__ = ['load_stack',
            'fit_features_in_stack',
            'get_theta',
            'save_stack',
-           'eight_bit_as']
+           'eight_bit_as',
+           'read_parameters']
 
 
 def load_stack(file_pattern):
@@ -849,3 +850,40 @@ def eight_bit_as(arr, dtype=np.float32):
     else: 
         arr = arr.astype(np.float32)
     return arr.astype(dtype)
+
+def read_parameters(file_pattern):
+    """Read parameters from 'parameters.txt' file.
+    
+    Parameters
+    ----------
+    file_pattern : list or str
+        Either a list of filenames or a string that is either:
+        a) the individual filename of e.g. a tiff stack or
+        b) a directory from which all images will be loaded into the stack
+        
+    Returns
+    -------
+    psx, psy, psz : float
+        Values of pixel size  in X, Y and Z of associated image stack
+    
+    Notes
+    -----
+    Not tested on multiple files, but should in principle work.
+    
+    """
+    
+    if isinstance(file_pattern, str):
+        if file_pattern[-1] != "/" and file_pattern[-1] != "\\": #in case file_pattern is a single file
+            file_pattern = str(Path(file_pattern).parent)
+    
+    elif isinstance(file_pattern, list):  # In case a list of files is provided
+        file_pattern = str(Path(file_pattern[0]).parent)
+    #if single directory, no need to change file_pattern
+    
+    with open(file_pattern + '/_output/parameters.txt') as f:
+        lines = f.readlines()
+        
+    x_line,y_line,z_line = lines[2],lines[3],lines[4]
+    psx,psy,psz=float(x_line[3:-4]), float(y_line[3:-4]), float(z_line[3:-4])
+    
+    return psx,psy,psz
