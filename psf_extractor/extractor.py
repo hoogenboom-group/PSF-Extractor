@@ -10,7 +10,7 @@ import pandas as pd
 from skimage import io, exposure, measure
 
 from .util import natural_sort, bboxes_overlap, is_notebook
-from .gauss import fit_gaussian_2D, fit_gaussian_1D
+from .gauss import fit_gaussian_2D, fit_gaussian_1D, fit_2_gauss_sum_to_mip
 
 import tifffile
 
@@ -51,7 +51,8 @@ __all__ = ['load_stack',
            'get_theta',
            'save_stack',
            'eight_bit_as',
-           'read_parameters']
+           'read_parameters',
+           'get_angle_astigmatism']
 
 
 def load_stack(file_pattern):
@@ -887,3 +888,18 @@ def read_parameters(file_pattern):
     psx,psy,psz=float(x_line[3:-4]), float(y_line[3:-4]), float(z_line[3:-4])
     
     return psx,psy,psz
+
+def get_angle_astigmatism(psf,first_guess_theta=45):
+    ''' Obtain angle of astigmatism from stack of a single PSF.
+    
+    '''
+    
+    #make maximum intensity projection of PSF
+    image = get_mip(psf)
+    
+    #fit
+    theta, fit = fit_2_gauss_sum_to_mip(image,first_guess_theta)
+    
+    print('Angle of astigmatism:\t', round(theta,1), 'degrees' )
+    
+    return theta, image, fit

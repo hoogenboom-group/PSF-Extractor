@@ -22,7 +22,8 @@ __all__ = ['plot_mip',
            'plot_psf',
            'plot_psfs',
            'plot_psf_localizations',
-           'plot_pcc_distribution']
+           'plot_pcc_distribution',
+           'plot_astigm_angle_fit']
 
 
 # No-brainer global variable
@@ -448,3 +449,25 @@ def plot_pcc_distribution(pccs, pcc_min=0.9, bins=None):
     ax.set_ylabel('Freq')
     ax.set_title('Distribution of PCCs')
     ax.grid(ls=':')
+
+
+def plot_astigm_angle_fit(image, fit, psx, psy):
+    sy, sx = image.shape
+    plt.figure(figsize=(10,5))
+    plt.subplot(131)
+    plt.imshow(image, cmap=fire,extent=[-sx/2*psx*1e-3,sx/2*psx*1e-3,-sy/2*psy*1e-3,sy/2*psy*1e-3])
+    plt.title('Maximum intensity projection')
+    plt.xlabel('X [μm]')
+    plt.ylabel('Y [μm]')
+    
+    plt.subplot(132)
+    plt.imshow(fit, cmap=fire,extent=[-sx/2*psx*1e-3,sx/2*psx*1e-3,-sy/2*psy*1e-3,sy/2*psy*1e-3])
+    plt.title('Fit')
+    plt.xlabel('X [μm]')
+    
+    plt.subplot(133)
+    plt.imshow(image - fit, cmap=fire,extent=[-sx/2*psx*1e-3,sx/2*psx*1e-3,-sy/2*psy*1e-3,sy/2*psy*1e-3])
+    plt.title('MIP - Fit')
+    plt.xlabel('X [μm]')
+    plt.show()
+    return
