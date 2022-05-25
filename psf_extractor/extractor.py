@@ -651,9 +651,9 @@ def crop_psf(psf, psx=None, psy=None, psz=None):
 
     return psf_cube
 
-def downsample_psf(psf_sum, upsample_factor=2):
+def downsample_psf(psf_sum, downsample_factor=2):
     psf = measure.block_reduce(psf_sum,
-                               block_size=(upsample_factor,)*psf_sum.ndim,
+                               block_size=(downsample_factor,)*psf_sum.ndim,
                                func=np.mean,
                                cval=np.mean(psf_sum))
     return psf
