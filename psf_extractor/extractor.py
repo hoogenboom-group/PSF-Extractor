@@ -35,6 +35,7 @@ MEM_TOT = psutil.virtual_memory().total / 1e9
 MEM_FREE = psutil.virtual_memory().free / 1e9
 
 __all__ = ['load_stack',
+           'save_stack', 
            'get_mip',
            'get_min_masses',
            'get_max_masses',
@@ -149,6 +150,70 @@ def load_stack(file_pattern):
     # Return stack
     logging.info(f"{stack.shape} image stack created succesfully.")
     return stack
+
+def save_stack(psf, file_pattern,psx,psy,psz,usf):
+    """Save PSF to file, along with metadata of stack.
+    
+    Parameters
+    ----------
+    psf: array-like
+        Image stack of shape (L, M, N)
+        
+    file_pattern : list or str
+        Either a list of filenames or a string that is either:
+        a) the individual filename of e.g. a tiff stack or
+        b) a directory from which all images will be loaded into the stack
+        
+    Returns
+    -------
+    ...
+    
+    Notes
+    -----
+    Not tested on multiple files, but should in principle work.
+    
+    """
+   
+    if isinstance(file_pattern, list):  # In case a list of files is provided
+        location = str(Path(file_pattern[0]).parent) + "/_output"
+        fp  = Path(location)
+        fp.mkdir(exist_ok=True)
+        #save psf to file
+        tifffile.imwrite(location + "/psf_av.tif",eight_bit_as(psf,np.uint8),photometric='minisblack')
+            
+        #save meta data
+        with open(location + '/parameters.txt','w') as f:
+            f.write('stack parameters:\n')
+            f.write('\n')
+            f.write('X: '+str(psx/usf)+' nm\n')
+            f.write('Y: '+str(psy/usf)+' nm\n')
+            f.write('Z: '+str(psz/usf)+' nm\n')
+    
+    # If a single directory or multipage tiff is provided
+    elif isinstance(file_pattern, str):
+        if file_pattern[-1] == "/" or file_pattern[-1] == "\\": #directory!
+            location = file_pattern + '_output'
+            fp  = Path(location)
+            fp.mkdir(exist_ok=True) #make output directory if not there
+        else:    #file!
+            location = str(Path(file_pattern).parent) + "/_output"
+            fp  = Path(location)
+            fp.mkdir(exist_ok=True) #make output directory if not there
+        
+        #save psf to file
+        tifffile.imwrite(location + "/psf_av.tif",eight_bit_as(psf,np.uint8),photometric='minisblack')
+        
+        #save meta data
+        with open(location + '/parameters.txt','w') as f:
+            f.write('stack parameters:\n')
+            f.write('\n')
+            f.write('X: '+str(psx/usf)+' nm\n')
+            f.write('Y: '+str(psy/usf)+' nm\n')
+            f.write('Z: '+str(psz/usf)+' nm\n')
+    
+    print("Succesfully saved PSF and parameters to file.")
+    
+    return
 
 def get_mip(stack, normalize=True, log=False, clip_pct=0, axis=0):
     """Compute the maximum intensity projection along the given axis.
