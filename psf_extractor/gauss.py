@@ -5,15 +5,10 @@ from scipy.optimize import curve_fit
 __all__ = [
     'gaussian_1D',
     'gaussian_2D',
-    'super_gaussian_1D',
-    'elliptical_gaussian_2D',
-    'elliptical_gaussian_2D_2x',
-    'super_elliptical_gaussian_2D',
     'fit_gaussian_1D',
     'fit_gaussian_2D',
     'guess_gaussian_1D_params',
-    'guess_gaussian_2D_params',
-    'fit_2_gauss_sum_to_mip'
+    'guess_gaussian_2D_params'
 ]
 
 
@@ -29,65 +24,6 @@ def gaussian_2D(x, y, x0, y0, sigma_x, sigma_y, A, B):
     return A * np.exp(-E) + B
 
 
-def super_gaussian_1D(x, x0, sigma_x, P, A, B):
-    """Super (higher order) Gaussian function
-
-    References
-    ----------
-    [1] https://en.wikipedia.org/wiki/Gaussian_function#Higher-order_Gaussian_or_super-Gaussian_function
-    """
-    # E = (2**(2*P - 1)) * np.log(2) * ((x - x0)**2 / sigma_x**2)
-    E = (x - x0)**2 / (2*sigma_x**2)
-    return A * np.exp(-E**P)**2 + B
-
-
-def elliptical_gaussian_2D(x, y, x0, y0, sigma_x, sigma_y, theta, A, B):
-    """Elliptical Gaussian function with added background
-
-    References
-    ----------
-    [1] https://en.wikipedia.org/wiki/Gaussian_function#Two-dimensional_Gaussian_function
-    """
-    # Convert angle from degrees to radians
-    theta = np.deg2rad(theta)
-    a = np.cos(theta)**2 / (2*sigma_x**2) + np.sin(theta)**2 / (2*sigma_y**2)
-    b = -np.sin(2*theta) / (4*sigma_x**2) + np.sin(2*theta) / (4*sigma_y**2)
-    c = np.sin(theta)**2 / (2*sigma_x**2) + np.cos(theta)**2 / (2*sigma_y**2)
-    return A * np.exp( -(a*(x-x0)**2 + 2*b*(x-x0)*(y-y0) + c*(y-y0)**2)) + B
-
-
-def elliptical_gaussian_2D_2x(x, y, x0, y0, sigma_x, sigma_y, theta, A, B):
-    """Sum of two Elliptical Gaussian functions with added background, with constraints:
-    - perpendicular to each other
-    - minor axis of first equals minor axis of second, same for major axes.
-
-    References
-    ----------
-    [1] https://en.wikipedia.org/wiki/Gaussian_function#Two-dimensional_Gaussian_function
-    """
-    # Convert angle from degrees to radians
-    theta = np.deg2rad(theta)
-    t2 = theta + np.deg2rad(90) #make gaussian perpendicular to each other
-    a = np.cos(theta)**2 / (2*sigma_x**2) + np.sin(theta)**2 / (2*sigma_y**2)
-    b = -np.sin(2*theta) / (4*sigma_x**2) + np.sin(2*theta) / (4*sigma_y**2)
-    c = np.sin(theta)**2 / (2*sigma_x**2) + np.cos(theta)**2 / (2*sigma_y**2)
-    a2 = np.cos(t2)**2 / (2*sigma_x**2) + np.sin(t2)**2 / (2*sigma_y**2)
-    b2 = -np.sin(2*t2) / (4*sigma_x**2) + np.sin(2*t2) / (4*sigma_y**2)
-    c2 = np.sin(t2)**2 / (2*sigma_x**2) + np.cos(t2)**2 / (2*sigma_y**2)
-    return 0.5 * A * (np.exp( -(a*(x-x0)**2 + 2*b*(x-x0)*(y-y0) + c*(y-y0)**2)) + np.exp( -(a2*(x-x0)**2 + 2*b2*(x-x0)*(y-y0) + c2*(y-y0)**2))) + B
-   
-
-def super_elliptical_gaussian_2D(x, y, x0, y0, sigma_x, sigma_y, P, A, B):
-    """Higher order elliptical Gaussian function with added background
-
-    References
-    ----------
-    [1] https://en.wikipedia.org/wiki/Gaussian_function#Higher-order_Gaussian_or_super-Gaussian_function
-    """
-    E = (x-x0)**2/(2*sigma_x**2) + (y-y0)**2/(2*sigma_y**2)
-    return A * np.exp(-E**P) + B
-
-
 def fit_gaussian_1D(y, x=None, p0=None):
     """Fit a 1D Gaussian"""
     if x is None:
@@ -97,25 +33,6 @@ def fit_gaussian_1D(y, x=None, p0=None):
         p0 = guess_gaussian_1D_params(y, x)
     popt, _ = curve_fit(gaussian_1D, x, y, p0=p0)
     return popt
-
-
-def guess_gaussian_1D_params(y, x=None):
-    """Make initial estimates for a 1D Gaussian fit"""
-    # Create vector in x if not provided
-    if x is None:
-        x = np.arange(y.size)
-
-    # Estimate x0
-    x0 = x[y.argmax()]
-    # Estimate sigma_x
-    xs = x[y > (y.max() + y.min())/2]  # threshold at half-maximum
-    # sigma = FWHM / (2*sqrt(2*ln(2)))
-    sigma_x = (xs.max() - xs.min()) / 2.355
-    # Estimates for amplitude and background
-    A = y.max() - y.min()
-    B = y.min()
-    return x0, sigma_x, A, B
-
 
 def fit_gaussian_2D(image, p0=None, theta=None, epsilon=1e-3):
     """Fit a 2D Gaussian
@@ -202,21 +119,22 @@ def _elliptical_gaussian_2D(M, *args):
     x, y = M
     return elliptical_gaussian_2D(x, y, *args)
 
-def _elliptical_gaussian_2D_2x(M, *args):
-    """Wrapper for `elliptical_gaussian_2D_2x` to pass 
-    to `scipy.optimize.curve_fit`
+def guess_gaussian_1D_params(y, x=None):
+    """Make initial estimates for a 1D Gaussian fit"""
+    # Create vector in x if not provided
+    if x is None:
+        x = np.arange(y.size)
 
-    References
-    ----------
-    [1] https://scipython.com/blog/non-linear-least-squares-fitting-of-a-two-dimensional-data/
-    """
-    # TODO: don't like to have two almost identical 
-    # wrapper functions
-    # M = array([[ 0,  1,  2, ..., N-2, N-1, N], --> x
-    #            [ 0,  0,  0, ..., N, N, N]])    --> y
-    x, y = M
-    return elliptical_gaussian_2D_2x(x, y, *args)
-
+    # Estimate x0
+    x0 = x[y.argmax()]
+    # Estimate sigma_x
+    xs = x[y > (y.max() + y.min())/2]  # threshold at half-maximum
+    # sigma = FWHM / (2*sqrt(2*ln(2)))
+    sigma_x = (xs.max() - xs.min()) / 2.355
+    # Estimates for amplitude and background
+    A = y.max() - y.min()
+    B = y.min()
+    return x0, sigma_x, A, B
 
 def guess_gaussian_2D_params(image):
     """Make initial estimates for a 2D Gaussian fit"""
@@ -240,37 +158,3 @@ def guess_gaussian_2D_params(image):
     B = image.mean()
 
     return x0, y0, sigma_x, sigma_y, A, B
-
-def fit_2_gauss_sum_to_mip(image,first_guess_theta=45):
-    ''' Fit sum of two ellipsoidal guassians to mip of psf.
-    
-    '''
-    
-    # get size of maximum intensity projection
-    sy, sx = image.shape
-    
-    # Make a meshgrid in the shape of the image
-    x = np.arange(sx)
-    y = np.arange(sy)
-    xx, yy = np.meshgrid(x, y)
-
-    # Ravel the meshgrids of X, Y points to a pair of 1D arrays
-    X = np.stack((xx.ravel(), yy.ravel()), axis=0)
-    # Ravel the image data
-    image_1D = image.ravel()
-
-    # get initial parameters for the fit
-    p0 = list(guess_gaussian_2D_params(image))
-    # insert first guess of theta to initial parameters
-    p0.insert(4, first_guess_theta) 
-        
-    # Add bounds to maintain sanity in fitting
-    fit_bounds = ([0, 0, 0, 0, -180, 0, 0], 
-                  [sx, sy, sx, sy, 180, image.max(), image.max()])
-
-    # do fit!
-    popt, _ = curve_fit(_elliptical_gaussian_2D_2x, X, image_1D, p0=p0, 
-                    bounds=fit_bounds)
-    theta = float(popt[4])
-    
-    return theta, elliptical_gaussian_2D_2x(xx, yy, *popt)
