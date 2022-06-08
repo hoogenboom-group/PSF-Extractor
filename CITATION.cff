@@ -24,8 +24,8 @@ authors:
 version: 0.1
 repository: 'https://github.com/hoogenboom-group/PSF-Extractor'
 abstract: >-
-  A Python software package for Point Spread Function extraction 
-  of optical setups.
+  A Python software package to characterize the 
+  Point Spread Function of an optical setup.
 keywords:
   - "point spread function"
   - "optical microscope"
