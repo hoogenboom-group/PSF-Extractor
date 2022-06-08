@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+title: PSF-Extractor
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Daan Benjamin
+    family-names: Boltje
+    email: d.b.boltje@tudelft.nl
+    affiliation: Delft University of Technology
+    orcid: 'https://orcid.org/0000-0003-4881-4700'
+  - given-names: Ernest Benjamin
+    name-particle: van der
+    family-names: Wee
+    email: E.B.vanderWee@tudelft.nl
+    affiliation: Delft University of Technology
+    orcid: 'https://orcid.org/0000-0002-0139-4019'
+  - given-names: Ryan
+    family-names: Lane
+    email: r.i.lane@tudelft.nl
+    affiliation: Delft University of Technology
+    orcid: 'https://orcid.org/0000-0002-5887-2069'
+version: 0.1
+repository: 'https://github.com/hoogenboom-group/PSF-Extractor'
+abstract: >-
+  A Python software package for Point Spread Function extraction 
+  of optical setups.
+keywords:
+  - "point spread function"
+  - "optical microscope"
+  - software
+license: GPL-2.0
+date-released: '2022-06-01'
