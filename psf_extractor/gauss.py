@@ -5,6 +5,7 @@ from scipy.optimize import curve_fit
 __all__ = [
     'gaussian_1D',
     'gaussian_2D',
+    'elliptical_gaussian_2D',
     'fit_gaussian_1D',
     'fit_gaussian_2D',
     'guess_gaussian_1D_params',
@@ -23,6 +24,18 @@ def gaussian_2D(x, y, x0, y0, sigma_x, sigma_y, A, B):
     E = (x-x0)**2/(2*sigma_x**2) + (y-y0)**2/(2*sigma_y**2)
     return A * np.exp(-E) + B
 
+def elliptical_gaussian_2D(x, y, x0, y0, sigma_x, sigma_y, theta, A, B):
+    """Elliptical Gaussian function with added background
+    References
+    ----------
+    [1] https://en.wikipedia.org/wiki/Gaussian_function#Two-dimensional_Gaussian_function
+    """
+    # Convert angle from degrees to radians
+    theta = np.deg2rad(theta)
+    a = np.cos(theta)**2 / (2*sigma_x**2) + np.sin(theta)**2 / (2*sigma_y**2)
+    b = -np.sin(2*theta) / (4*sigma_x**2) + np.sin(2*theta) / (4*sigma_y**2)
+    c = np.sin(theta)**2 / (2*sigma_x**2) + np.cos(theta)**2 / (2*sigma_y**2)
+    return A * np.exp( -(a*(x-x0)**2 + 2*b*(x-x0)*(y-y0) + c*(y-y0)**2)) + B
 
 def fit_gaussian_1D(y, x=None, p0=None):
     """Fit a 1D Gaussian"""
