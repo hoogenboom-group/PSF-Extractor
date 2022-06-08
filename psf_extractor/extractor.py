@@ -48,7 +48,8 @@ __all__ = ['load_stack',
            'align_psfs',
            'crop_psf',
            'downsample_psf',
-           'fit_features_in_stack']
+           'fit_features_in_stack',
+           'eight_bit_as']
 
 
 def load_stack(file_pattern):
@@ -784,3 +785,31 @@ def fit_features_in_stack(stack, features, width=None, theta=None):
         fit_features = pd.concat([fit_features, bead_df], axis=1)
     return fit_features
     
+def eight_bit_as(arr, dtype=np.float32):
+    """Convert array to 8 bit integer array.
+    
+    Parameters
+    ----------
+    arr: array-like
+        Array of shape (L, M, N)
+        
+    dtype : data type
+        Data type of existing array.
+        
+    Returns
+    -------
+    arr.astype(dtype) : array-like
+        Array formatted to 8 bit integer array
+    
+    Notes
+    -----
+    ...
+    """
+    
+    if arr.dtype != np.uint8:
+        arr = arr.astype(np.float32)
+        arr -= arr.min()
+        arr *= 255./arr.max()
+    else: 
+        arr = arr.astype(np.float32)
+    return arr.astype(dtype)
