@@ -1,5 +1,5 @@
 # PSF-Extractor
-A Python software package for Point Spread Function extraction of optical setups.
+A Python software package to characterize the Point Spread Function of an optical setup.
 
 Created by Daan Boltje, Ernest van der Wee  
 Made presentable by Ryan Lane  
