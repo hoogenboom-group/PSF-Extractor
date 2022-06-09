@@ -23,6 +23,7 @@ authors:
     orcid: 'https://orcid.org/0000-0002-5887-2069'
 version: 0.1
 repository: 'https://github.com/hoogenboom-group/PSF-Extractor'
+url: 'https://github.com/hoogenboom-group/PSF-Extractor'
 abstract: >-
   A Python software package to characterize the 
   Point Spread Function of an optical setup.
