@@ -45,6 +45,7 @@ __all__ = ['load_stack',
            'detect_outlier_psfs',
            'localize_psf',
            'localize_psfs',
+           'filt_locations',
            'align_psfs',
            'crop_psf',
            'downsample_psf',
@@ -152,7 +153,8 @@ def load_stack(file_pattern):
     logging.info(f"{stack.shape} image stack created succesfully.")
     return stack
 
-def save_stack(psf, file_pattern,psx,psy,psz,usf):
+
+def save_stack(psf, file_pattern,psx,psy,psz,usf,bin_num=None,bin_edges=None):
     """Save PSF to file, along with metadata of stack.
     
     Parameters
@@ -164,6 +166,8 @@ def save_stack(psf, file_pattern,psx,psy,psz,usf):
         Either a list of filenames or a string that is either:
         a) the individual filename of e.g. a tiff stack or
         b) a directory from which all images will be loaded into the stack
+    bin_num: int
+        bin number in case stack is binned (along x)
         
     Returns
     -------
@@ -173,10 +177,21 @@ def save_stack(psf, file_pattern,psx,psy,psz,usf):
     -----
     Not tested on multiple files, but should in principle work.
     
+    Escapes when PSF array has only zeros.
     """
-   
+    
+    if np.sum(psf) == 0:
+        if bin_num == None: 
+            print('Empty PSF: only zeros...')
+        else: 
+            print('Empty PSF: only zeros... (Bin #'+str(bin_num)+')')
+        return
+    
     if isinstance(file_pattern, list):  # In case a list of files is provided
-        location = str(Path(file_pattern[0]).parent) + "/_output"
+        if bin_num == None: 
+            location = str(Path(file_pattern[0]).parent) + "/_output"
+        else: 
+            location = str(Path(file_pattern[0]).parent) + "/_output" + "/bin_"+str(bin_num)
         fp  = Path(location)
         fp.mkdir(exist_ok=True)
         #save psf to file
@@ -193,11 +208,15 @@ def save_stack(psf, file_pattern,psx,psy,psz,usf):
     # If a single directory or multipage tiff is provided
     elif isinstance(file_pattern, str):
         if file_pattern[-1] == "/" or file_pattern[-1] == "\\": #directory!
-            location = file_pattern + '_output'
+            if bin_num == None: location = file_pattern + '_output'
+            else: 
+                location = file_pattern + '_output' + "/bin_"+str(bin_num)
             fp  = Path(location)
             fp.mkdir(exist_ok=True) #make output directory if not there
         else:    #file!
-            location = str(Path(file_pattern).parent) + "/_output"
+            if bin_num == None: location = str(Path(file_pattern).parent) + "/_output"
+            else: 
+                location = str(Path(file_pattern).parent) + "/_output" + "/bin_"+str(bin_num)
             fp  = Path(location)
             fp.mkdir(exist_ok=True) #make output directory if not there
         
@@ -211,9 +230,16 @@ def save_stack(psf, file_pattern,psx,psy,psz,usf):
             f.write('X: '+str(psx/usf)+' nm\n')
             f.write('Y: '+str(psy/usf)+' nm\n')
             f.write('Z: '+str(psz/usf)+' nm\n')
+            if bin_num != None:
+                bin_edges_upd = [0]
+                bin_edges_upd.extend(bin_edges)
+                bin_edges = [0].extend(bin_edges)
+                f.write('\n')
+                f.write('Bin center: ' + str(np.round(bin_edges_upd[bin_num-1]+bin_edges_upd[1]/2))+ ' pixels\n' )
+                f.write('Bin center: ' + str(round(0.001*psx*(bin_edges_upd[bin_num-1]+bin_edges_upd[1]/2),2))+ ' microns' )
     
-    print("Succesfully saved PSF and parameters to file.")
-    
+    if bin_num == None: print("Succesfully saved PSF and parameters to file.")
+    else: print("Succesfully saved PSF and parameters of Bin #"+ str(bin_num) + " to file.")
     return
 
 def get_mip(stack, normalize=True, log=False, clip_pct=0, axis=0):
@@ -433,7 +459,7 @@ def detect_edge_features(features, Dx, Dy, wx, wy=None):
     return edges
 
 
-def extract_psfs(stack, features, shape, return_indices=False):
+def extract_psfs(stack, features, shape):
     """Extract the PSF (aka subvolume) from each detected feature while 
     simultaneously filtering out edge features.
 
@@ -445,20 +471,18 @@ def extract_psfs(stack, features, shape, return_indices=False):
         DataFrame of detected features
     shape : array-like or 3-tuple
         The dimensions of the PSF to be extracted (wz, wy, wx)
-    return_features : bool
-        Whether to return updated feature set
 
     Returns
     -------
     psfs : list
         List of all the PSFs as numpy arrays
-    features : `pd.DataFrame` (optional)
+    features_upd : `pd.DataFrame`
         DataFrame of features with edge features removed
-        
+
     Notes
     -----
     * A feature is considered to be an edge feature if the volume of the
-      extracted PSF extends outside the image stack in x or y
+      extracted PSF extends outside the image stack in z
     """
     # Unpack PSF shape
     wz, wy, wx = shape
@@ -466,22 +490,13 @@ def extract_psfs(stack, features, shape, return_indices=False):
     # having the same shape
     wz, wy, wx = np.ceil([wz, wy, wx]).astype(int) // 2 * 2 + 1
     if wz > stack.shape[0]: 
-        logging.warn(f'Chosen PSF window z size ({wz} px) is larger '
-                     f'than stack z size ({stack.shape[0]} px).')
+        logging.warning(f'Chosen PSF window z size ({wz} px) is larger '
+                        f'than stack z size ({stack.shape[0]} px).')
 
     # Iterate through features
     psfs = []  # collect PSFs
     edge_features = []  # collect indices of edge features
     for i, row in features.iterrows():
-
-        # Set z indices
-        if stack.shape[0] < wz:  # image stack height < wz
-            # Take full image stack in z
-            z1, z2 = 0, stack.shape[0]
-        else:
-            # Place the subvolume at halfway in z
-            z1, z2 = (int(stack.shape[0]/2 - wz/2),
-                      int(stack.shape[0]/2 + wz/2))
 
         # Get x, y position of feature
         x, y = row[['x', 'y']]
@@ -504,20 +519,40 @@ def extract_psfs(stack, features, shape, return_indices=False):
             x1, x2 = (int(x - wx/2),
                       int(x + wx/2))
 
-        # Determine if feature is along the edge of the image stack
-        if (x1 <= 0) or (y1 <= 0) or (x2 > stack.shape[2]) or (y2 > stack.shape[1]):
+        # Set z indices
+        if stack.shape[0] < wz:  # image stack height < wz
+            # Take full image stack in z
+            z1, z2 = 0, stack.shape[0]
+        else:
+            # Find the max intensity along Z
+            # Set width around center of bead to sum in-plane intensities
+            pixel_width = 4 # Corresponds to the usual sampling rate (~8 pixels per bead) when recording a PSF.
+            z_sum = stack[:, 
+                          int(y-pixel_width):int(y+pixel_width), 
+                          int(x-pixel_width):int(x+pixel_width)].sum(axis=(1, 2))
+            max_index = np.argmax(z_sum)
+
+            #set the volume around that point
+            z1, z2 = (int(max_index - wz/2),
+                      int(max_index + wz/2))
+
+        # Determine if feature is along the edge of the image stack in z
+        if (z1 <= 0) or (z2 > stack.shape[0]):
             edge_features.append(i)
         # Extract PSF
         else:
             psf = stack[z1:z2, y1:y2, x1:x2]
             psfs.append(psf)
 
-    # Basically donezo
-    if not return_indices:
-        return psfs
+    if len(psfs) == 0:
+        logging.warning('\t All PSF windows outside of stack, all PSFs are filtered out. \
+                         \n \t \t Decrease PSF window in Z (wz) or record larger Z-stack')
 
-    # Return edge features
-    return psfs, edge_features
+    # Remove edge features
+    features_upd = features.drop(edge_features,axis=0)
+
+    # Return psfs and updated feature set
+    return psfs, features_upd
 
 
 def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False):
@@ -632,9 +667,69 @@ def localize_psfs(psfs, integrate=False):
             df.loc[i, cols] = localize_psf(psf, integrate=integrate)
         # `curve_fit` failed
         except RuntimeError:
+            logging.warning('Could not fit PSF, no location returned.')
             pass
     return df
 
+def filt_locations(locations,features,psfs):
+    """ Filter locations on their distance from center of PSF volume and width of fit (in X and Y)
+        Using three sigma in the distribution
+    
+    Parameters
+    ----------
+    locations : pd dataframe
+        fit results of fitting gaussians to the beads in PSF volume stack.
+    features : pd dataframe
+        list of features as obtained from trackpy
+    psfs : 4d array
+        array containing all extracted psfs [psf number, x, y, z]
+    
+    Returns
+    ----------
+    locations_new : pd dataframe
+        filtered locations of the beads in PSF volume stack.
+    features_new: pd dataframe
+        filtered list of features as obtained from trackpy
+    psfs: 4d array
+        filtered array containing psfs [psf number, x, y, z]
+    """
+    
+    #get distributions of x, y and sigmas
+    x = locations.loc[:,'x0']
+    y = locations.loc[:,'y0']
+    sig_x = locations.loc[:,'sigma_x']
+    sig_y = locations.loc[:,'sigma_y']
+    
+    # get three sigma lows and highs
+    three_sigma_x = [x.mean() - 3 * x.std(), x.mean() + 3 * x.std()] 
+    three_sigma_y = [y.mean() - 3 * y.std(), y.mean() + 3 * y.std()] 
+    three_sigma_sig_x = [sig_x.mean() - 3 * sig_x.std(), sig_x.mean() + 3 * sig_x.std()] 
+    three_sigma_sig_y = [sig_y.mean() - 3 * sig_y.std(), sig_y.mean() + 3 * sig_y.std()] 
+    
+    feat_index_list=(list(features.index.values) ) # this will always work in pandas
+    #check if locations are within three sigma of x, y, sigma_x and sigma_y
+    drop_list=[]
+    for i in range(len(locations)):
+        if (locations.loc[i,'x0'] < three_sigma_x[0] or locations.loc[i,'x0'] > three_sigma_x[1]
+            or locations.loc[i,'y0'] < three_sigma_y[0] or locations.loc[i,'y0'] > three_sigma_y[1]
+            or locations.loc[i,'sigma_x'] < three_sigma_sig_x[0] or locations.loc[i,'sigma_x'] > three_sigma_sig_x[1]
+            or locations.loc[i,'sigma_y'] < three_sigma_sig_y[0] or locations.loc[i,'sigma_y'] > three_sigma_sig_y[1]):
+            
+            
+            #make list of rows to drop
+            drop_list.append(i)
+            
+    psfs = np.delete(psfs, drop_list, 0)
+    
+    if drop_list == []:
+        features_new = features
+    else:
+        for j in drop_list:
+            features_new=features.drop(feat_index_list[j], axis=0)
+    
+    locations_new=locations.drop(drop_list, axis=0)
+    
+    return locations_new, features_new,psfs
 
 def align_psfs(psfs, locations, upsample_factor=2):
     """Upsample, align, and sum PSFs
@@ -643,7 +738,9 @@ def align_psfs(psfs, locations, upsample_factor=2):
         List of PSFs
     locations : `pd.DataFrame`
         Localization data with z0, y0, and x0 positions
-
+    upsample_factor : int
+        Upsampling factor
+        
     Returns
     -------
     psf_sum : array-like

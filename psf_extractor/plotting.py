@@ -359,7 +359,7 @@ def plot_psfs(psfs, psx=None, psy=None):
     [fig.delaxes(axes.flat[-i-1]) for i in range(ncols*nrows - len(psfs))]
 
 
-def plot_psf_localizations(df):
+def plot_psf_localizations(df_input,psx,psy,psz,shape):
     """Plot PSF localizations.
 
     Parameters
@@ -370,12 +370,33 @@ def plot_psf_localizations(df):
         is the center coordinate of the PSF within the stack
         and (sigma_z, sigma_y, sigma_x) is the fitted
         standard deviation of the PSF in each dimension
-
+    psx, psy, psz : float
+        pixel size in x, y and z (in nm)
+    shape : 3 - tuple
+        The dimensions of the PSF to be extracted (wz, wy, wx)
     Notes
     -----
     * Produces XY, YZ, and XZ projections of the fitted PSFs with the
       projections illustrated as matplotlib Ellipse patches
     """
+    
+    # Alias
+    df = df_input.copy()
+    
+    # Transform positions to mean of all positions
+    x_center, y_center, z_center = np.mean(df['x0']),np.mean(df['y0']),np.mean(df['z0'])
+    df['x0']=df['x0']-x_center
+    df['y0']=df['y0']-y_center
+    df['z0']=df['z0']-z_center
+    
+    # Convert to nanometers
+    df ['x0'] = df ['x0'] * psx
+    df ['y0'] = df ['y0'] * psy
+    df ['z0'] = df ['z0'] * psz
+    df ['sigma_x'] = df ['sigma_x'] * psx
+    df ['sigma_y'] = df ['sigma_y'] * psy
+    df ['sigma_z'] = df ['sigma_z'] * psz
+    
     # Create figure
     fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(10, 10))
 
@@ -407,22 +428,23 @@ def plot_psf_localizations(df):
     # --- Aesthetics ---
     # XY projection
     axes[0,0].text(0.02, 0.02, 'XY', fontsize=14, transform=axes[0,0].transAxes)
-    axes[0,0].set_xlabel('X [px]')
-    axes[0,0].set_ylabel('Y [px]')
+    axes[0,0].set_xlabel('X [nm]')
+    axes[0,0].set_ylabel('Y [nm]')
     axes[0,0].xaxis.set_ticks_position('top')
     axes[0,0].xaxis.set_label_position('top')
+    
     # YZ projection
     axes[0,1].text(0.02, 0.02, 'YZ', fontsize=14, transform=axes[0,1].transAxes)
-    axes[0,1].set_xlabel('Z [px]')
-    axes[0,1].set_ylabel('Y [px]')
+    axes[0,1].set_xlabel('Z [nm]')
+    axes[0,1].set_ylabel('Y [nm]')
     axes[0,1].xaxis.set_ticks_position('top')
     axes[0,1].xaxis.set_label_position('top')
     axes[0,1].yaxis.set_ticks_position('right')
     axes[0,1].yaxis.set_label_position('right')
     # XZ projection
     axes[1,0].text(0.02, 0.02, 'XZ', fontsize=14, transform=axes[1,0].transAxes)
-    axes[1,0].set_xlabel('X [px]')
-    axes[1,0].set_ylabel('Z [px]')
+    axes[1,0].set_xlabel('X [nm]')
+    axes[1,0].set_ylabel('Z [nm]')
 
     for ax in [axes[0,0], axes[1,0], axes[0,1]]:
         ax.set_aspect('equal')
