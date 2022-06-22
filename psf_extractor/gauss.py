@@ -144,6 +144,9 @@ def guess_gaussian_1D_params(y, x=None):
     xs = x[y > (y.max() + y.min())/2]  # threshold at half-maximum
     # sigma = FWHM / (2*sqrt(2*ln(2)))
     sigma_x = (xs.max() - xs.min()) / 2.355
+    # check if sigma estimation failed, if so give generic estimate
+    if sigma_x == 0:
+        sigma_x = x[y.argmax()+2] - x[y.argmax()-2]
     # Estimates for amplitude and background
     A = y.max() - y.min()
     B = y.min()
