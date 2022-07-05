@@ -245,17 +245,17 @@ def plot_psf(psf, psx, psy, psz):
     crop_yz = int((wz - 2*wy) / (2*psz*1e-3)) if wz > 2*wy else None
     crop_xz = int((wz - 2*wx) / (2*psz*1e-3)) if wz > 2*wx else None
     # Crop 2D PSFs to 2:1 aspect ratio
-    psf_z0 = psf[z0, :, :]
-    psf_y0 = psf[crop_yz:-crop_yz, y0, :] if wz > 2*wy else psf[:, y0, :]
-    psf_x0 = psf[crop_xz:-crop_xz, :, x0] if wz > 2*wx else psf[:, :, x0]
+    psf_xy_at_z0 = psf[z0, :, :]
+    psf_xz_at_y0 = psf[crop_yz:-crop_yz, y0, :] if wz > 2*wy else psf[:, y0, :]
+    psf_yz_at_x0 = psf[crop_xz:-crop_xz, :, x0] if wz > 2*wx else psf[:, :, x0]
     # Update extent (after cropping)
-    wz_cropped = psf_y0.shape[0] * 1e-3*psz
+    wz_cropped = psf_xz_at_y0.shape[0] * 1e-3*psz
     # Plot 2D PSFs
-    ax_xy.imshow(psf_z0, cmap=fire, interpolation='none',
+    ax_xy.imshow(psf_xy_at_z0, cmap=fire, interpolation='none',
                  extent=[-wx/2, wx/2, -wy/2, wy/2])
-    ax_yz.imshow(psf_y0.T, cmap=fire, interpolation='none',
+    ax_yz.imshow(psf_yz_at_x0.T, cmap=fire, interpolation='none',
                  extent=[-wz_cropped/2, wz_cropped/2, -wy/2, wy/2])
-    ax_xz.imshow(psf_x0, cmap=fire, interpolation='none',
+    ax_xz.imshow(psf_xz_at_y0, cmap=fire, interpolation='none',
                  extent=[-wx/2, wx/2, -wz_cropped/2, wz_cropped/2])
 
     # --- 1D Plots ---
