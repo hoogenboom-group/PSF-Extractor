@@ -759,7 +759,8 @@ def align_psfs(psfs, locs, upsample_factor=2):
                         .repeat(usf, axis=2)
 
         # From fit
-        z0, y0, x0 = usf * locs.loc[i, ['z0', 'y0', 'x0']]
+        z0, y0, x0 = usf * locs.iloc[i, [2, 1, 0]]
+        
         # PSF center
         zc, yc, xc = (psf_up.shape[0]//2,
                       psf_up.shape[1]//2,
