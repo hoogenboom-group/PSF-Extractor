@@ -731,12 +731,12 @@ def filt_locations(locations,features,psfs):
     
     return locations_new, features_new,psfs
 
-def align_psfs(psfs, locations, upsample_factor=2):
+def align_psfs(psfs, locs, upsample_factor=2):
     """Upsample, align, and sum PSFs
 
     psfs : list or array-like
         List of PSFs
-    locations : `pd.DataFrame`
+    locs : `pd.DataFrame`
         Localization data with z0, y0, and x0 positions
     upsample_factor : int
         Upsampling factor
@@ -759,7 +759,7 @@ def align_psfs(psfs, locations, upsample_factor=2):
                         .repeat(usf, axis=2)
 
         # From fit
-        z0, y0, x0 = usf * locations.loc[i, ['z0', 'y0', 'x0']]
+        z0, y0, x0 = usf * locs.loc[i, ['z0', 'y0', 'x0']]
         # PSF center
         zc, yc, xc = (psf_up.shape[0]//2,
                       psf_up.shape[1]//2,
