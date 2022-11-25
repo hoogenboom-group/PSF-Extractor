@@ -537,7 +537,7 @@ def extract_psfs(stack, features, shape):
                       int(max_index + wz/2))
 
         # Determine if feature is along the edge of the image stack in z
-        if (z1 <= 0) or (z2 > stack.shape[0]):
+        if (z1 < 0) or (z2 > stack.shape[0]):
             edge_features.append(i)
         # Extract PSF
         else:
@@ -552,7 +552,7 @@ def extract_psfs(stack, features, shape):
     features_upd = features.drop(edge_features,axis=0)
 
     # Return psfs and updated feature set
-    return psfs, features_upd
+    return psfs, features_upd.reset_index(drop=True)
 
 
 def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False):
@@ -641,8 +641,7 @@ def localize_psf(psf, integrate=False):
 
     return (x0, y0, z0, sigma_x, sigma_y, sigma_z)
 
-
-def localize_psfs(psfs, integrate=False):
+def localize_psfs(psfs, integrate=False, fea_ex=None):
     """Localize all PSFs in stack.
 
     Parameters
@@ -651,11 +650,15 @@ def localize_psfs(psfs, integrate=False):
         List of PSFs
     integrate : bool
         Whether to integrate the PSF over x and y before doing 1D fit.
+    fea_ex : Pandas DataFrame or None
+        When Pandas DataFrame is passed it is used to return Gauss fitted
+        coordinates in the original stack frame of reference.
 
     Returns
     -------
     df : `pd.DataFrame`
-        DataFrame of the fit parameters from each PSF
+        DataFrame of the fit parameters from each PSF. X, Y positions 
+        in original stack coordinates if fea_ex is passed.
     """
     # Initialize DataFrame
     cols = ['x0', 'y0', 'z0', 'sigma_x', 'sigma_y', 'sigma_z']
@@ -664,12 +667,17 @@ def localize_psfs(psfs, integrate=False):
     for i, psf in tqdm(enumerate(psfs), total=len(psfs)):
         try:
             # Localize each PSF and populate DataFrame with fit parameters
-            df.loc[i, cols] = localize_psf(psf, integrate=integrate)
+            x0, y0, z0, s_x, s_y, s_z = localize_psf(psf, integrate=integrate)
+            if fea_ex is not None:
+                dz, dy, dx = psf.shape
+                x = (int(fea_ex.loc[i, 'x'] - dx/2))
+                y = (int(fea_ex.loc[i, 'y'] - dx/2))
+            df.loc[i, cols] = x+x0, y+y0, z0, s_x, s_y, s_z 
         # `curve_fit` failed
         except RuntimeError:
             logging.warning('Could not fit PSF, no location returned.')
             pass
-    return df
+    return df.astype(float)
 
 def filt_locations(locations,features,psfs):
     """ Filter locations on their distance from center of PSF volume and width of fit (in X and Y)

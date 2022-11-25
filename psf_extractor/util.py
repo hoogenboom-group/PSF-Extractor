@@ -4,7 +4,9 @@ from scipy.ndimage import gaussian_filter
 from matplotlib.colors import ListedColormap
 
 
-__all__ = ['natural_sort',
+__all__ = ['fit_plane',
+           'fit_sphere',
+           'natural_sort',
            'bboxes_overlap',
            'generate_image',
            'white_noise',
@@ -12,6 +14,52 @@ __all__ = ['natural_sort',
            'is_notebook',
            'get_Daans_special_cmap']
 
+def fit_plane(points_3d):
+    """Fit plane to datapoints in 3D
+
+    Parameters
+    ----------
+    points_3d: numpy array (Nx3)
+               Data points which are fitted. Should have 
+               N rows, each row containing Z, Y, X coordinates
+
+    References
+    ----------
+    [1] https://gist.github.com/amroamroamro/1db8d69b4b65e8bc66a6
+    """
+    A = np.c_[points_3d[:,2], points_3d[:,1], np.ones(points_3d.shape[0])]
+    C, res, rank, singval = np.linalg.lstsq(A, points_3d[:,0], rcond=None)
+    return C
+
+
+def fit_sphere(points_3d):
+    """Fit sphere to datapoints in 3D
+
+    Parameters
+    ----------
+    points_3d: numpy array (Nx3)
+               Data points which are fitted. Should have 
+               N rows, each row containing Z, Y, X coordinates
+
+    References
+    ----------
+    [1] https://jekel.me/2015/Least-Squares-Sphere-Fit/
+    """
+    A = np.zeros((points_3d.shape[0],4))
+    A[:,0] = points_3d[:,2]*2
+    A[:,1] = points_3d[:,1]*2
+    A[:,2] = points_3d[:,0]*2
+    A[:,3] = 1
+
+    f = np.zeros((points_3d.shape[0],1))
+    f[:,0] = ((points_3d[:,2]*points_3d[:,2])
+             + (points_3d[:,1]*points_3d[:,1])
+             + (points_3d[:,0]*points_3d[:,0]))
+    C, res, rank, singval = np.linalg.lstsq(A, f, rcond=None)
+
+    t = (C[0]*C[0])+(C[1]*C[1])+(C[2]*C[2])+C[3]
+    r = np.sqrt(t)
+    return r, C[0], C[1], C[2]
 
 def natural_sort(l):
     """A more natural sorting algorithm
