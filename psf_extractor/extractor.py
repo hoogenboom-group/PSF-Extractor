@@ -49,11 +49,12 @@ __all__ = ['load_stack',
            'align_psfs',
            'crop_psf',
            'downsample_psf',
+           'extract_localize_extract',
            'fit_features_in_stack',
            'eight_bit_as']
 
 
-def load_stack(file_pattern):
+def load_stack(file_pattern, disable_tqdm=False):
     """Loads image stack into dask array allowing manipulation
     of large datasets.
 
@@ -91,7 +92,8 @@ def load_stack(file_pattern):
         logging.info("Creating stack from list of filenames.")
         stack = []
         for i, fp in tqdm(enumerate(file_pattern),
-                          total=len(file_pattern)):
+                          total=len(file_pattern),
+                          disable=disable_tqdm):
             logging.debug(f"Reading image file ({i+1}/{len(file_pattern)}) : {fp}")
             image = io.imread(fp, plugin='pil')
             stack.append(image)
@@ -113,7 +115,8 @@ def load_stack(file_pattern):
             # Load images
             stack = []
             for i, fp in tqdm(enumerate(filepaths),
-                              total=len(filepaths)):
+                              total=len(filepaths),
+                              disable=disable_tqdm):
                 logging.debug(f"Reading image file ({i+1}/{len(filepaths)}) : {fp}")
                 image = io.imread(fp, plugin='pil')
                 stack.append(image)
@@ -363,7 +366,7 @@ def get_max_masses(min_mass, n=6, b=5):
     return max_masses
 
 
-def detect_overlapping_features(features, wx, wy=None):
+def detect_overlapping_features(features, wx, wy=None, disable_tqdm=False):
     """Detects overlapping features from feature set.
 
     Parameters
@@ -403,7 +406,7 @@ def detect_overlapping_features(features, wx, wy=None):
     # Loop through a grid in x, y to create cells
     Nx = X.max() + cw
     Ny = Y.max() + cw
-    for x in tqdm(np.arange(0, Nx, cw)):
+    for x in tqdm(np.arange(0, Nx, cw), disable=disable_tqdm):
         for y in np.arange(0, Ny, cw):
             # Create cell
             cell = [x-cw, y-cw, x+2*cw, y+2*cw]
@@ -497,7 +500,6 @@ def extract_psfs(stack, features, shape):
     psfs = []  # collect PSFs
     edge_features = []  # collect indices of edge features
     for i, row in features.iterrows():
-
         # Get x, y position of feature
         x, y = row[['x', 'y']]
 
@@ -555,7 +557,7 @@ def extract_psfs(stack, features, shape):
     return psfs, features_upd.reset_index(drop=True)
 
 
-def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False):
+def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False, disable_tqdm=False):
     """Detect outlier PSFs based on the Pearson correlation coefficient (PCC).
 
     Parameters
@@ -574,7 +576,7 @@ def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False):
     pccs = []
     # Iterate through every (unique) pair of PSFs
     ij = list(combinations(range(len(psfs)), 2))
-    for i, j in tqdm(ij, total=len(ij)):
+    for i, j in tqdm(ij, total=len(ij), disable=disable_tqdm):
         # Get pairs of PSFs
         mip_i = np.max(psfs[i], axis=0)
         mip_j = np.max(psfs[j], axis=0)
@@ -641,7 +643,7 @@ def localize_psf(psf, integrate=False):
 
     return (x0, y0, z0, sigma_x, sigma_y, sigma_z)
 
-def localize_psfs(psfs, integrate=False, fea_ex=None):
+def localize_psfs(psfs, integrate=False, fea_ex=None, disable_tqdm=False):
     """Localize all PSFs in stack.
 
     Parameters
@@ -664,15 +666,15 @@ def localize_psfs(psfs, integrate=False, fea_ex=None):
     cols = ['x0', 'y0', 'z0', 'sigma_x', 'sigma_y', 'sigma_z']
     df = pd.DataFrame(columns=cols)
     # Loop through PSFs
-    for i, psf in tqdm(enumerate(psfs), total=len(psfs)):
+    for i, psf in tqdm(enumerate(psfs), total=len(psfs), disable=disable_tqdm):
         try:
             # Localize each PSF and populate DataFrame with fit parameters
             x0, y0, z0, s_x, s_y, s_z = localize_psf(psf, integrate=integrate)
             if fea_ex is not None:
                 dz, dy, dx = psf.shape
-                x = (int(fea_ex.loc[i, 'x'] - dx/2))
-                y = (int(fea_ex.loc[i, 'y'] - dx/2))
-            df.loc[i, cols] = x+x0, y+y0, z0, s_x, s_y, s_z 
+                x0 += (int(fea_ex.loc[i, 'x'] - dx/2.))
+                y0 += (int(fea_ex.loc[i, 'y'] - dy/2.))
+            df.loc[i, cols] = x0, y0, z0, s_x, s_y, s_z 
         # `curve_fit` failed
         except RuntimeError:
             logging.warning('Could not fit PSF, no location returned.')
@@ -739,7 +741,7 @@ def filt_locations(locations,features,psfs):
     
     return locations_new, features_new,psfs
 
-def align_psfs(psfs, locs, upsample_factor=2):
+def align_psfs(psfs, locs, upsample_factor=2, disable_tqdm=False):
     """Upsample, align, and sum PSFs
 
     psfs : list or array-like
@@ -759,7 +761,7 @@ def align_psfs(psfs, locs, upsample_factor=2):
 
     # Loop through PSFs
     psf_sum = 0  # dummy variable
-    for i, psf in tqdm(enumerate(psfs), total=len(psfs)):
+    for i, psf in tqdm(enumerate(psfs), total=len(psfs), disable=disable_tqdm):
 
         # Upsample PSF
         psf_up = psfs[i].repeat(usf, axis=0)\
@@ -825,7 +827,16 @@ def downsample_psf(psf_sum, downsample_factor=2):
                                cval=np.mean(psf_sum))
     return psf
 
-def fit_features_in_stack(stack, features, width=None, theta=None):
+def extract_localize_extract(stack, features, shape):
+    psfs, fe = extract_psfs(stack, features=features, shape=shape)
+    features = localize_psfs(psfs, integrate=True, fea_ex=fe, disable_tqdm=True)
+    features = features.rename(columns={"x0":"x", "y0":"y"})
+    psfs, fe = extract_psfs(stack, features=features, shape=shape)
+    features = localize_psfs(psfs, integrate=False, fea_ex=features, disable_tqdm=True)
+    features = features.rename(columns={"x0": "x", "y0": "y", "z0": "z"})
+    return psfs, features
+
+def fit_features_in_stack(stack, features, width=None, theta=None, disable_tqdm=False):
     """Fit 2D gaussian to each slice in stack. XY positions
     defined 'x' and 'y' columns of features `pd.DataFrame'.
 
@@ -868,7 +879,7 @@ def fit_features_in_stack(stack, features, width=None, theta=None):
 
     fit_results = []
     # iterate through stack
-    for i, zslice in tqdm(enumerate(stack), total=len(stack)):
+    for i, zslice in tqdm(enumerate(stack), total=len(stack), disable=disable_tqdm):
         fit_results.append([])
         logging.debug(f"Fitting slice ({i+1}/{len(stack)})")
         # for each zslice and each bead fit feature with 2D Gauss
