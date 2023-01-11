@@ -667,18 +667,23 @@ def localize_psfs(psfs, integrate=False, fea_ex=None, disable_tqdm=False):
     df = pd.DataFrame(columns=cols)
     # Loop through PSFs
     for i, psf in tqdm(enumerate(psfs), total=len(psfs), disable=disable_tqdm):
-        try:
-            # Localize each PSF and populate DataFrame with fit parameters
-            x0, y0, z0, s_x, s_y, s_z = localize_psf(psf, integrate=integrate)
-            if fea_ex is not None:
-                dz, dy, dx = psf.shape
-                x0 += (int(fea_ex.loc[i, 'x'] - dx/2.))
-                y0 += (int(fea_ex.loc[i, 'y'] - dy/2.))
-            df.loc[i, cols] = x0, y0, z0, s_x, s_y, s_z 
-        # `curve_fit` failed
-        except RuntimeError:
-            logging.warning('Could not fit PSF, no location returned.')
-            pass
+        row = 6 * [np.nan]
+        if fea_ex is not None: 
+            row[0] = fea_ex.loc[i, 'x']
+            row[1] = fea_ex.loc[i, 'y']
+        if len(psf.ravel()) > 0: 
+            try:
+                # Localize each PSF and populate DataFrame with fit parameters
+                x0, y0, z0, s_x, s_y, s_z = localize_psf(psf, integrate=integrate)
+                if fea_ex is not None:
+                    dz, dy, dx = psf.shape
+                    x0 += (int(fea_ex.loc[i, 'x'] - dx/2.))
+                    y0 += (int(fea_ex.loc[i, 'y'] - dy/2.))
+                row = [x0, y0, z0, s_x, s_y, s_z]
+            # `curve_fit` failed
+            except RuntimeError:
+                logging.warning('Could not fit PSF, no location returned.')
+        df.loc[i, cols] = row
     return df.astype(float)
 
 def filt_locations(locations,features,psfs):
@@ -832,10 +837,10 @@ def extract_localize_extract(stack, features, shape):
     features = localize_psfs(psfs, integrate=True, fea_ex=fe, disable_tqdm=True)
     features = features.rename(columns={"x0":"x", "y0":"y"})
     psfs, fe = extract_psfs(stack, features=features, shape=shape)
-    features = localize_psfs(psfs, integrate=False, fea_ex=features, disable_tqdm=True)
+    features = localize_psfs(psfs, integrate=False, fea_ex=fe, disable_tqdm=True)
     features = features.rename(columns={"x0": "x", "y0": "y", "z0": "z"})
     return psfs, features
-
+    
 def fit_features_in_stack(stack, features, width=None, theta=None, disable_tqdm=False):
     """Fit 2D gaussian to each slice in stack. XY positions
     defined 'x' and 'y' columns of features `pd.DataFrame'.

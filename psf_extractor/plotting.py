@@ -64,7 +64,7 @@ def plot_mip(mip, dx=None, dy=None, features=None):
     # Plot features (if possible)
     if features is not None:
         ax.plot(features['x'], features['y'], ls='', color='#00ff00',
-                marker='o', ms=15, mfc='none', mew=1)
+                marker='o', ms=10, mfc='none', mew=1)
         title = f'Features Detected: {len(features):.0f}'
     else:
         title = 'Maximum Intensity Projection'
