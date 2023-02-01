@@ -146,7 +146,7 @@ def guess_gaussian_1D_params(y, x=None):
     sigma_x = (xs.max() - xs.min()) / 2.355
     # check if sigma estimation failed, if so give generic estimate
     if sigma_x == 0:
-        sigma_x = x[y.argmax()+2] - x[y.argmax()-2]
+        sigma_x = x[min((y.argmax()+2, len(y)-1))] - x[max((y.argmax()-2, 0))]
     # Estimates for amplitude and background
     A = y.max() - y.min()
     B = y.min()

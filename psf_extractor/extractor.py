@@ -149,7 +149,8 @@ def load_stack(file_pattern, disable_tqdm=False):
     # Avoids additional float64 memmory allocation for data
     stack = stack.astype(np.float32)
     imin, imax = np.min(stack), np.max(stack)
-    stack = np.clip(stack, imin, imax)
+    # I dont think this is required as we just obtain the min and max above
+    #stack = np.clip(stack, imin, imax)
     stack -= imin
     stack /= (imax - imin)
     # Return stack
@@ -605,7 +606,7 @@ def detect_outlier_psfs(psfs, pcc_min=0.9, return_pccs=False, disable_tqdm=False
     return outliers
 
 
-def localize_psf(psf, integrate=False):
+def localize_psf(psf, integrate=False, return_all=False):
     """Localize a given PSF in the stack.
 
     Parameters
@@ -628,22 +629,23 @@ def localize_psf(psf, integrate=False):
     mip = np.max(psf, axis=0)
 
     # 2D Fit
-    x0, y0, sigma_x, sigma_y, A, B = fit_gaussian_2D(mip)
+    x0, y0, sigma_x, sigma_y, Axy, Bxy = fit_gaussian_2D(mip)
 
     # 1D Fit
     # TODO: seems like slice is better but not totally convinced
     if integrate:
         # Integrate over x and y
         z_sum = psf.sum(axis=(1, 2))
-        z0, sigma_z, A, B = fit_gaussian_1D(z_sum)
+        z0, sigma_z, Az, Bz = fit_gaussian_1D(z_sum)
     else:
         # Slice in through x0, y0
         z_slice = psf[:,int(y0), int(x0)]
-        z0, sigma_z, A, B = fit_gaussian_1D(z_slice)
+        z0, sigma_z, Az, Bz = fit_gaussian_1D(z_slice)
 
-    return (x0, y0, z0, sigma_x, sigma_y, sigma_z)
+    if return_all: return (x0, y0, z0, sigma_x, sigma_y, sigma_z, Axy, Bxy, Az, Bz)
+    else: return (x0, y0, z0, sigma_x, sigma_y, sigma_z)
 
-def localize_psfs(psfs, integrate=False, fea_ex=None, disable_tqdm=False):
+def localize_psfs(psfs, integrate=False, fea_ex=None, disable_tqdm=False, return_all=False):
     """Localize all PSFs in stack.
 
     Parameters
@@ -664,22 +666,23 @@ def localize_psfs(psfs, integrate=False, fea_ex=None, disable_tqdm=False):
     """
     # Initialize DataFrame
     cols = ['x0', 'y0', 'z0', 'sigma_x', 'sigma_y', 'sigma_z']
+    if return_all: cols += ['Axy', 'Bxy', 'Az', 'Bz']
     df = pd.DataFrame(columns=cols)
     # Loop through PSFs
     for i, psf in tqdm(enumerate(psfs), total=len(psfs), disable=disable_tqdm):
-        row = 6 * [np.nan]
+        row = len(cols) * [np.nan]
         if fea_ex is not None: 
             row[0] = fea_ex.loc[i, 'x']
             row[1] = fea_ex.loc[i, 'y']
         if len(psf.ravel()) > 0: 
             try:
                 # Localize each PSF and populate DataFrame with fit parameters
-                x0, y0, z0, s_x, s_y, s_z = localize_psf(psf, integrate=integrate)
+                row = localize_psf(psf, integrate=integrate, return_all=return_all)
+                row = list(row)
                 if fea_ex is not None:
                     dz, dy, dx = psf.shape
-                    x0 += (int(fea_ex.loc[i, 'x'] - dx/2.))
-                    y0 += (int(fea_ex.loc[i, 'y'] - dy/2.))
-                row = [x0, y0, z0, s_x, s_y, s_z]
+                    row[0] += (int(fea_ex.loc[i, 'x'] - dx/2.))
+                    row[1] += (int(fea_ex.loc[i, 'y'] - dy/2.))
             # `curve_fit` failed
             except RuntimeError:
                 logging.warning('Could not fit PSF, no location returned.')
