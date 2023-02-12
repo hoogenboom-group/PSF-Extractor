@@ -690,9 +690,9 @@ def localize_psfs(psfs, integrate=False, fea_ex=None, disable_tqdm=False, return
         df.loc[i, cols] = row
     return df.astype(float)
 
-def filt_locations(locations,features,psfs):
+def filt_locations(locations, features, psfs):
     """ Filter locations on their distance from center of PSF volume and width of fit (in X and Y)
-        Using three sigma in the distribution
+        Using three sigma in the distribution. Also check if all shapes in PSF are the same.
     
     Parameters
     ----------
@@ -712,7 +712,9 @@ def filt_locations(locations,features,psfs):
     psfs: 4d array
         filtered array containing psfs [psf number, x, y, z]
     """
-    
+    # get most counted PSF shape
+    s_med = np.median(np.array([p.shape for p in psfs]), axis=0)
+
     #get distributions of x, y and sigmas
     x = locations.loc[:,'x0']
     y = locations.loc[:,'y0']
@@ -732,13 +734,14 @@ def filt_locations(locations,features,psfs):
         if (locations.loc[i,'x0'] < three_sigma_x[0] or locations.loc[i,'x0'] > three_sigma_x[1]
             or locations.loc[i,'y0'] < three_sigma_y[0] or locations.loc[i,'y0'] > three_sigma_y[1]
             or locations.loc[i,'sigma_x'] < three_sigma_sig_x[0] or locations.loc[i,'sigma_x'] > three_sigma_sig_x[1]
-            or locations.loc[i,'sigma_y'] < three_sigma_sig_y[0] or locations.loc[i,'sigma_y'] > three_sigma_sig_y[1]):
-            
+            or locations.loc[i,'sigma_y'] < three_sigma_sig_y[0] or locations.loc[i,'sigma_y'] > three_sigma_sig_y[1]
+            or np.any(psfs[i].shape != s_med)):
             
             #make list of rows to drop
             drop_list.append(i)
             
-    psfs = np.delete(psfs, drop_list, 0)
+    for index in sorted(drop_list, reverse=True):
+        del psfs[index]
     
     if drop_list == []:
         features_new = features
@@ -748,7 +751,7 @@ def filt_locations(locations,features,psfs):
     
     locations_new=locations.drop(drop_list, axis=0)
     
-    return locations_new, features_new,psfs
+    return locations_new, features_new, psfs
 
 def align_psfs(psfs, locs, upsample_factor=2, disable_tqdm=False):
     """Upsample, align, and sum PSFs
