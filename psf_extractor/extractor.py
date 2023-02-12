@@ -683,8 +683,9 @@ def localize_psfs(psfs, integrate=False, fea_ex=None, disable_tqdm=False, return
                     dz, dy, dx = psf.shape
                     row[0] += (int(fea_ex.loc[i, 'x'] - dx/2.))
                     row[1] += (int(fea_ex.loc[i, 'y'] - dy/2.))
-            # `curve_fit` failed
-            except RuntimeError:
+            # RuntimeError: `curve_fit` failed
+            # ValueError: typically from the guess_1d_gauss function
+            except (RuntimeError, ValueError) as e:
                 logging.warning('Could not fit PSF, no location returned.')
         df.loc[i, cols] = row
     return df.astype(float)
