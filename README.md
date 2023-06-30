@@ -8,7 +8,7 @@ Input from Yoram Vos
 ### Installation
 * Create a new conda environment (assumes Anaconda or Miniconda is already installed) from the terminal
 ```
-$ conda create -n psf -c conda-forge numpy scipy pandas matplotlib scikit-image jupyterlab trackpy
+$ conda create -n psf -c conda-forge numpy scipy pandas matplotlib scikit-image jupyterlab trackpy xarray
 ```
 
 * Activate environment
@@ -25,7 +25,7 @@ $ conda activate psf
 ### To run in a Jupyter notebook
 * (Optional) environment setup for enlightened folk
 ```
-(psf) $ conda install -c conda-forge nodejs
+(psf) $ conda install -c conda-forge nodejs mpl_interactions
 (psf) $ pip install tqdm ipympl ipywidgets imagecodecs
 (psf) $ jupyter labextension install @jupyter-widgets/jupyterlab-manager
 (psf) $ jupyter labextension install jupyter-matplotlib
