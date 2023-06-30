@@ -27,9 +27,6 @@ $ conda activate psf
 ```
 (psf) $ conda install -c conda-forge nodejs
 (psf) $ pip install tqdm ipympl ipywidgets imagecodecs mpl_interactions
-(psf) $ jupyter labextension install @jupyter-widgets/jupyterlab-manager
-(psf) $ jupyter labextension install jupyter-matplotlib
-(psf) $ jupyter nbextension enable --py widgetsnbextension
 ```
 
 * Start jupyter lab session
