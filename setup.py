@@ -19,6 +19,8 @@ INSTALL_REQUIRES = [
     'tqdm',
     'dask',
     'joblib',
+    'xarray',
+    'mpl_interactions'
 ]
 
 if __name__ == '__main__':
