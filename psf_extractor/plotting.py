@@ -4,6 +4,8 @@ import trackpy
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_interactions import hyperslicer
+import xarray as xr
 
 from .extractor import get_mip, get_min_masses
 from .gauss import gaussian_1D, fit_gaussian_1D, guess_gaussian_1D_params
@@ -220,9 +222,7 @@ def plot_overlapping_features(mip, features, overlapping, wx, wy=None):
     ax.set_title(title)
 
 
-def plot_psf(psf, psx, psy, psz):
-    """Fancy PSF plot."""
-
+def plot_psf(psf, psx, psy, psz, usf):
     # Create figure and axes
     fig = plt.figure(figsize=(11, 11))
     gs = fig.add_gridspec(9, 9)
@@ -236,27 +236,103 @@ def plot_psf(psf, psx, psy, psz):
     # PSF dimensions
     Nz, Ny, Nx = psf.shape
     # PSF volume [μm]
-    wz, wy, wx = 1e-3*psz*Nz, 1e-3*psy*Ny, 1e-3*psx*Nx
+    wz, wy, wx = 1e-3*psz/usf*Nz, 1e-3*psy/usf*Ny, 1e-3*psx/usf*Nx
+
     # PSF center coords
     z0, y0, x0 = Nz//2, Ny//2, Nx//2
 
-    # --- 2D Plots ---
+    # --- Slider Plots ---
+    #transpose psf for XZ and YZ slider plots
+    yzx=psf.transpose(1,0,2)
+    xyz=psf.transpose(2,1,0)
+    
     # Determine cropping margin
-    crop_yz = int((wz - 2*wy) / (2*psz*1e-3)) if wz > 2*wy else None
-    crop_xz = int((wz - 2*wx) / (2*psz*1e-3)) if wz > 2*wx else None
+    crop_yz = int((wz - 2*wy) / (2*psz/usf*1e-3)) if wz > 2*wy else None
+    crop_xz = int((wz - 2*wx) / (2*psz/usf*1e-3)) if wz > 2*wx else None
     # Crop 2D PSFs to 2:1 aspect ratio
-    psf_xy_at_z0 = psf[z0, :, :]
-    psf_xz_at_y0 = psf[crop_yz:-crop_yz, y0, :] if wz > 2*wy else psf[:, y0, :]
-    psf_yz_at_x0 = psf[crop_xz:-crop_xz, :, x0] if wz > 2*wx else psf[:, :, x0]
-    # Update extent (after cropping)
-    wz_cropped = psf_xz_at_y0.shape[0] * 1e-3*psz
-    # Plot 2D PSFs
-    ax_xy.imshow(psf_xy_at_z0, cmap=fire, interpolation='none',
-                 extent=[-wx/2, wx/2, -wy/2, wy/2])
-    ax_yz.imshow(psf_yz_at_x0.T, cmap=fire, interpolation='none',
-                 extent=[-wz_cropped/2, wz_cropped/2, -wy/2, wy/2])
-    ax_xz.imshow(psf_xz_at_y0, cmap=fire, interpolation='none',
-                 extent=[-wx/2, wx/2, -wz_cropped/2, wz_cropped/2])
+    psf_y0 = yzx[:, crop_yz:-crop_yz, :] if wz > 2*wy else yzx # XZ plot
+    psf_x0 = xyz[:, :, crop_xz:-crop_xz] if wz > 2*wx else xyz # YZ plot
+
+    #determine along z after cropping
+    wz_cropped = psf_y0.shape[1] * 1e-3*psz/usf
+
+    #make value range along z, y and x for plots
+    len_psf = np.shape(psf)[0]
+    len_psf_y0 = np.shape(psf_y0)[0]
+    len_psf_x0 = np.shape(psf_x0)[0]
+
+    z_range = np.linspace(-len_psf//2*psz/usf*1e-3,(len_psf//2+1)*psz/usf*1e-3,len_psf) 
+    y_range = np.linspace(-len_psf_y0//2*psy/usf*1e-3,(len_psf_y0//2+1)*psy/usf*1e-3,len_psf_y0) 
+    x_range = np.linspace(-len_psf_x0//2*psx/usf*1e-3,(len_psf_x0//2+1)*psx/usf*1e-3,len_psf_x0) 
+
+    # --- Slider plots ---
+    # XY slider plot
+    coords_psf = { # define dimensions of array
+        "Z (μm)": z_range,
+        "Y" : np.linspace(-wy/2, wy/2, Ny),
+        "X" : np.linspace(-wx/2, wx/2, Nx)}
+    # define array
+    x_psf = xr.DataArray(psf, dims=coords_psf.keys(), coords=coords_psf)
+    # make slider plot
+    control1 = hyperslicer(x_psf,
+                           ax=ax_xy,
+                           vmin=np.min(x_psf), vmax=np.max(x_psf), 
+                           cmap=fire,
+                           extent=[-wy/2, wy/2,-wx/2, wx/2])
+
+    # XZ slider plot
+    coords_psf_y0 = { # define dimensions of array
+        "Y (μm)": y_range,
+        "Z" : np.linspace(-wz/2, wz/2, np.shape(psf_y0)[1]),
+        "X" : np.linspace(-wx/2, wx/2, np.shape(psf_y0)[2])}
+    # define array
+    x_psf_y0 = xr.DataArray(psf_y0, dims=coords_psf_y0.keys(), coords=coords_psf_y0) 
+    # make slider plot
+    control2 = hyperslicer(x_psf_y0,
+                       ax=ax_xz,
+                       vmin=np.min(x_psf_y0), vmax=np.max(x_psf_y0), 
+                       cmap=fire,
+                       extent=[-wx/2, wx/2,-wz_cropped/2, wz_cropped/2])
+
+    # YZ slider plot
+    coords_psf_x0 = { # define dimensions of array
+        "X (μm)": x_range,
+        "Y" : np.linspace(-wy/2, wy/2, np.shape(psf_x0)[1]),
+        "Z" : np.linspace(-wz/2, wz/2, np.shape(psf_x0)[2])}
+    # define array
+    x_psf_x0 = xr.DataArray(psf_x0, dims=coords_psf_x0.keys(), coords=coords_psf_x0) 
+    # make slider plot
+    control3 = hyperslicer(x_psf_x0,
+                   ax=ax_yz,
+                   vmin=np.min(x_psf_x0), vmax=np.max(x_psf_x0), 
+                   cmap=fire,
+                   extent=[-wz_cropped/2, wz_cropped/2,-wy/2, wy/2])
+
+    # set initial values of sliders
+    control1.vbox.children[0].children[0].value=len_psf//2 #use function iso these nasty lines?
+    control2.vbox.children[0].children[0].value=len_psf_y0//2
+    control3.vbox.children[0].children[0].value=len_psf_x0//2
+
+    # --- Set labels, text, axes... ---
+    # XY projection
+    ax_xy.text(0.02, 0.02, 'XY', color='white', fontsize=14, transform=ax_xy.transAxes)
+    ax_xy.set_xlabel('X [μm]')
+    ax_xy.set_ylabel('Y [μm]')
+    ax_xy.xaxis.set_ticks_position('top')
+    ax_xy.xaxis.set_label_position('top')
+    # YZ projection
+    ax_yz.text(0.02, 0.02, 'YZ', color='white', fontsize=14, transform=ax_yz.transAxes)
+    ax_yz.set_xlabel('Z [μm]')
+    ax_yz.set_ylabel('Y [μm]')
+    ax_yz.xaxis.set_ticks_position('top')
+    ax_yz.xaxis.set_label_position('top')
+    ax_yz.yaxis.set_ticks_position('right')
+    ax_yz.yaxis.set_label_position('right')
+    # XZ projection
+    ax_xz.text(0.02, 0.02, 'XZ', color='white', fontsize=14, transform=ax_xz.transAxes)
+    ax_xz.set_xlabel('X [μm]')
+    ax_xz.set_ylabel('Z [μm]')
+
 
     # --- 1D Plots ---
     # 1D PSFs (slices)
@@ -284,46 +360,26 @@ def plot_psf(psf, psx, psy, psz):
     # --- FWHM arrows ---
     # Z
     x0 = popt_z[0]
-    y0 = popt_z[2]/2 + popt_z[3]
+    y0 = 0.65*(popt_z[2] + popt_z[3])
     fwhm = np.abs(2.355 * popt_z[1])
-    ax_z.annotate('', xy=(x0-fwhm/2-0.6, y0), xytext=(x0-fwhm/2-0.1, y0), arrowprops={'arrowstyle': '<|-'})
-    ax_z.annotate('', xy=(x0+fwhm/2+0.6, y0), xytext=(x0+fwhm/2+0.1, y0), arrowprops={'arrowstyle': '<|-'})
+    ax_z.annotate('', xy=(x0-fwhm/2-0.5, y0), xytext=(x0-fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
+    ax_z.annotate('', xy=(x0+fwhm/2+0.5, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
     ax_z.text(x0,popt_z[3], f'{1e3*fwhm:.0f}nm', ha='center')
     # Y
     x0 = popt_y[0]
-    y0 = popt_y[2]/2 + popt_y[3]
+    y0 = 0.65*(popt_y[2] + popt_y[3])
     fwhm = np.abs(2.355 * popt_y[1])
-    ax_y.annotate('', xy=(x0-fwhm/2-0.6, y0), xytext=(x0-fwhm/2-0.1, y0), arrowprops={'arrowstyle': '<|-'})
-    ax_y.annotate('', xy=(x0+fwhm/2+0.6, y0), xytext=(x0+fwhm/2+0.1, y0), arrowprops={'arrowstyle': '<|-'})
+    ax_y.annotate('', xy=(x0-fwhm/2-0.5, y0), xytext=(x0-fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
+    ax_y.annotate('', xy=(x0+fwhm/2+0.5, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
     ax_y.text(x0, popt_z[3], f'{1e3*fwhm:.0f}nm', ha='center')
     # X
     x0 = popt_x[0]
-    y0 = popt_x[2]/2 + popt_x[3]
+    y0 = 0.65*(popt_x[2] + popt_x[3])
     fwhm = np.abs(2.355 * popt_x[1])
-    ax_x.annotate('', xy=(x0-fwhm/2-0.6, y0), xytext=(x0-fwhm/2-0.1, y0), arrowprops={'arrowstyle': '<|-'})
-    ax_x.annotate('', xy=(x0+fwhm/2+0.6, y0), xytext=(x0+fwhm/2+0.1, y0), arrowprops={'arrowstyle': '<|-'})
+    ax_x.annotate('', xy=(x0-fwhm/2-0.5, y0), xytext=(x0-fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
+    ax_x.annotate('', xy=(x0+fwhm/2+0.5, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
     ax_x.text(x0, popt_z[3], f'{1e3*fwhm:.0f}nm', ha='center')
 
-
-    # --- Aesthetics ---
-    # XY projection
-    ax_xy.text(0.02, 0.02, 'XY', color='white', fontsize=14, transform=ax_xy.transAxes)
-    ax_xy.set_xlabel('X [μm]')
-    ax_xy.set_ylabel('Y [μm]')
-    ax_xy.xaxis.set_ticks_position('top')
-    ax_xy.xaxis.set_label_position('top')
-    # YZ projection
-    ax_yz.text(0.02, 0.02, 'YZ', color='white', fontsize=14, transform=ax_yz.transAxes)
-    ax_yz.set_xlabel('Z [μm]')
-    ax_yz.set_ylabel('Y [μm]')
-    ax_yz.xaxis.set_ticks_position('top')
-    ax_yz.xaxis.set_label_position('top')
-    ax_yz.yaxis.set_ticks_position('right')
-    ax_yz.yaxis.set_label_position('right')
-    # XZ projection
-    ax_xz.text(0.02, 0.02, 'XZ', color='white', fontsize=14, transform=ax_xz.transAxes)
-    ax_xz.set_xlabel('X [μm]')
-    ax_xz.set_ylabel('Z [μm]')
     # 1D Axes
     ax_x.set_xlabel('Distance [μm]')
     [ax.set_xlim(-wy*1.1, wy*1.1) for ax in [ax_z, ax_y, ax_x]]
@@ -331,6 +387,8 @@ def plot_psf(psf, psx, psy, psz):
     [ax.legend(loc='upper right') for ax in [ax_z, ax_y, ax_x]]
     [ax.grid(ls=':') for ax in [ax_z, ax_y, ax_x]]
     plt.subplots_adjust(hspace=0.5, wspace=0.5)
+    plt.tight_layout()
+    #plt.show()
 
 
 def plot_psfs(psfs, psx=None, psy=None):
