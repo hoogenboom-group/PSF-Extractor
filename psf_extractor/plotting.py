@@ -11,6 +11,8 @@ from .extractor import get_mip, get_min_masses
 from .gauss import gaussian_1D, fit_gaussian_1D, guess_gaussian_1D_params
 from .util import get_Daans_special_cmap, is_notebook
 
+from scipy.optimize import curve_fit
+
 if is_notebook():
     from tqdm.notebook import tqdm
 else:
@@ -65,7 +67,8 @@ def plot_mip(mip, dx=None, dy=None, features=None):
     im = ax.imshow(mip_log, cmap=fire)
     # Plot features (if possible)
     if features is not None:
-        ax.plot(features['x'], features['y'], ls='', color='#00ff00',
+        ax.plot(features['x'].to_numpy(), features['y'].to_numpy(), 
+                ls='', color='#00ff00',
                 marker='o', ms=10, mfc='none', mew=1)
         title = f'Features Detected: {len(features):.0f}'
     else:
@@ -172,7 +175,7 @@ def plot_mass_range_interactive(mip, mass, features, filtering='min'):
     # Set up figure
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.imshow(mip_log, cmap=fire)  # plot MIP
-    ax.plot(df['x'], df['y'], ls='', color='#00ff00',
+    ax.plot(df['x'].to_numpy(), df['y'].to_numpy(), ls='', color='#00ff00',
             marker='o', ms=15, mfc='none', mew=1)
     title = f'Features Detected: {len(df):.0f}'
     ax.set_title(title)
@@ -344,9 +347,12 @@ def plot_psf(psf, psx, psy, psz, usf):
     y = np.linspace(-wy/2, wy/2, prof_y.size)
     x = np.linspace(-wx/2, wx/2, prof_x.size)
     # Do 1D PSF fits
-    popt_z = fit_gaussian_1D(prof_z, z, p0=guess_gaussian_1D_params(prof_z, z))
-    popt_y = fit_gaussian_1D(prof_y, y, p0=guess_gaussian_1D_params(prof_y, y))
-    popt_x = fit_gaussian_1D(prof_x, x, p0=guess_gaussian_1D_params(prof_x, x))
+    popt_z, pcov_z = curve_fit(gaussian_1D, z, prof_z, p0=guess_gaussian_1D_params(prof_z, z))
+    std_err_z = np.sqrt(np.diag(pcov_z))
+    popt_y, pcov_y = curve_fit(gaussian_1D, y, prof_y, p0=guess_gaussian_1D_params(prof_y, y))
+    std_err_y = np.sqrt(np.diag(pcov_y))
+    popt_x, pcov_x = curve_fit(gaussian_1D, x, prof_x, p0=guess_gaussian_1D_params(prof_x, x))
+    std_err_x = np.sqrt(np.diag(pcov_x))
     # Plot 1D PSFs
     plot_kwargs = {'ms': 5, 'marker': 'o', 'ls': '', 'alpha': 0.75}
     ax_z.plot(z, prof_z, c='C1', label='Z', **plot_kwargs)
@@ -362,23 +368,26 @@ def plot_psf(psf, psx, psy, psz, usf):
     x0 = popt_z[0]
     y0 = 0.65*(popt_z[2] + popt_z[3])
     fwhm = np.abs(2.355 * popt_z[1])
+    fwhm_err = std_err_z[1]
     ax_z.annotate('', xy=(x0-fwhm/2-0.5, y0), xytext=(x0-fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
     ax_z.annotate('', xy=(x0+fwhm/2+0.5, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
-    ax_z.text(x0,popt_z[3], f'{1e3*fwhm:.0f}nm', ha='center')
+    ax_z.text(x0, popt_z[3], f'{1e3*fwhm:.0f} ({1e3*fwhm_err:.0f}) nm', ha='center')
     # Y
     x0 = popt_y[0]
     y0 = 0.65*(popt_y[2] + popt_y[3])
     fwhm = np.abs(2.355 * popt_y[1])
+    fwhm_err = std_err_y[1]
     ax_y.annotate('', xy=(x0-fwhm/2-0.5, y0), xytext=(x0-fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
     ax_y.annotate('', xy=(x0+fwhm/2+0.5, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
-    ax_y.text(x0, popt_z[3], f'{1e3*fwhm:.0f}nm', ha='center')
+    ax_y.text(x0, popt_z[3], f'{1e3*fwhm:.0f} ({1e3*fwhm_err:.0f}) nm', ha='center')
     # X
     x0 = popt_x[0]
     y0 = 0.65*(popt_x[2] + popt_x[3])
     fwhm = np.abs(2.355 * popt_x[1])
+    fwhm_err = std_err_x[1]
     ax_x.annotate('', xy=(x0-fwhm/2-0.5, y0), xytext=(x0-fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
     ax_x.annotate('', xy=(x0+fwhm/2+0.5, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
-    ax_x.text(x0, popt_z[3], f'{1e3*fwhm:.0f}nm', ha='center')
+    ax_x.text(x0, popt_z[3], f'{1e3*fwhm:.0f} ({1e3*fwhm_err:.0f}) nm', ha='center')
 
     # 1D Axes
     ax_x.set_xlabel('Distance [μm]')
@@ -463,26 +472,27 @@ def plot_psf_localizations(df_input,psx,psy,psz,shape):
     for i, row in df.iterrows():
         # XY projection
         xy = row[['x0', 'y0']]
+        
         w, h = row['sigma_x'], row['sigma_y']
-        e = Ellipse(xy, w, h, alpha=0.1, color='C1')
+        e = Ellipse(xy.to_numpy(), w, h, alpha=0.1, color='C1')
         axes[0,0].add_patch(e)
 
         # YZ projection
         yz = row[['z0', 'y0']]
         w, h = row['sigma_z'], row['sigma_y']
-        e = Ellipse(yz, w, h, alpha=0.1, color='C2')
+        e = Ellipse(yz.to_numpy(), w, h, alpha=0.1, color='C2')
         axes[0,1].add_patch(e)
 
         # XZ projection
         xz = row[['x0', 'z0']]
         w, h = row['sigma_x'], row['sigma_z']
-        e = Ellipse(xz, w, h, alpha=0.1, color='C0')
+        e = Ellipse(xz.to_numpy(), w, h, alpha=0.1, color='C0')
         axes[1,0].add_patch(e)
 
     # PSF centers in x, y
-    axes[0,0].plot(df['x0'], df['y0'], 'k+')  # XY
-    axes[0,1].plot(df['z0'], df['y0'], 'k+')  # YZ
-    axes[1,0].plot(df['x0'], df['z0'], 'k+')  # XZ
+    axes[0,0].plot(df['x0'].to_numpy(), df['y0'].to_numpy(), 'k+')  # XY
+    axes[0,1].plot(df['z0'].to_numpy(), df['y0'].to_numpy(), 'k+')  # YZ
+    axes[1,0].plot(df['x0'].to_numpy(), df['z0'].to_numpy(), 'k+')  # XZ
 
     # --- Aesthetics ---
     # XY projection

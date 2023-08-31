@@ -20,7 +20,8 @@ INSTALL_REQUIRES = [
     'dask',
     'joblib',
     'xarray',
-    'mpl_interactions'
+    'mpl_interactions',
+    'ipympl'
 ]
 
 if __name__ == '__main__':
