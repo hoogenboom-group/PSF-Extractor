@@ -218,9 +218,11 @@ def save_stack(psf, file_pattern,psx,psy,psz,usf,bin_num=None,bin_edges=None):
             fp  = Path(location)
             fp.mkdir(exist_ok=True) #make output directory if not there
         else:    #file!
-            if bin_num == None: location = str(Path(file_pattern).parent) + "/_output"
+            #extract file_name for output directory
+            file_name = os.path.splitext(os.path.split(file_pattern)[1])[0]
+            if bin_num == None: location = str(Path(file_pattern).parent) + "/"+file_name+"_output"
             else: 
-                location = str(Path(file_pattern).parent) + "/_output" + "/bin_"+str(bin_num)
+                location = str(Path(file_pattern).parent) + "/"+file_name+"_output" + "/bin_"+str(bin_num)
             fp  = Path(location)
             fp.mkdir(exist_ok=True) #make output directory if not there
         
