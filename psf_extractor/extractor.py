@@ -13,6 +13,7 @@ from .util import natural_sort, bboxes_overlap, is_notebook
 from .gauss import fit_gaussian_2D, fit_gaussian_1D
 
 import tifffile
+import os
 
 # Check for dask
 try:
