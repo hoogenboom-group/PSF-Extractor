@@ -6,6 +6,7 @@ from itertools import combinations
 
 import numpy as np
 from scipy.stats import pearsonr
+from scipy.ndimage import zoom
 import pandas as pd
 from skimage import io, exposure, measure
 
@@ -159,7 +160,7 @@ def load_stack(file_pattern, disable_tqdm=False):
     return stack
 
 
-def save_stack(psf, file_pattern,psx,psy,psz,usf,bin_num=None,bin_edges=None):
+def save_stack(psf, file_pattern,psx,psy,psz,usf,bin_num=None,bin_edges=None,downsample=False):
     """Save PSF to file, along with metadata of stack.
     
     Parameters
@@ -191,6 +192,11 @@ def save_stack(psf, file_pattern,psx,psy,psz,usf,bin_num=None,bin_edges=None):
         else: 
             print('Empty PSF: only zeros... (Bin #'+str(bin_num)+')')
         return
+    
+    #option to save psf without upsampling
+    if downsample == True:
+        psf = zoom(psf,(1/usf,1/usf,1/usf))
+        usf = 1 #set upsample factor back to one.
     
     if isinstance(file_pattern, list):  # In case a list of files is provided
         if bin_num == None: 
