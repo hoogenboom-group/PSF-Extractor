@@ -197,8 +197,9 @@ def save_stack(psf, file_pattern,psx,psy,psz,usf,bin_num=None,bin_edges=None,dow
     if downsample == True:
         psf = zoom(psf,(1/usf,1/usf,1/usf))
         usf = 1 #set upsample factor back to one.
-    
-    if isinstance(file_pattern, list):  # In case a list of files is provided
+
+    # In case a list of files is provided
+    if isinstance(file_pattern, list): 
         if bin_num == None: 
             location = str(Path(file_pattern[0]).parent) + "/_output"
         else: 
@@ -206,8 +207,18 @@ def save_stack(psf, file_pattern,psx,psy,psz,usf,bin_num=None,bin_edges=None,dow
         fp  = Path(location)
         fp.mkdir(exist_ok=True)
         #save psf to file
-        tifffile.imwrite(location + "/psf_av.tif",eight_bit_as(psf,np.uint8),photometric='minisblack')
-            
+        tifffile.imwrite(location + "/psf_av.tif", 
+                        eight_bit_as(psf,np.uint8),
+                        photometric='minisblack',
+                        imagej=True,
+                        resolution=(usf/(psy*0.001),usf/(psx*0.001)),
+                        metadata={
+                           'spacing': (psz*0.001)/usf,
+                           'unit': 'um',
+                           'axes': 'ZYX'
+                                   }
+                        )
+        
         #save meta data
         with open(location + '/parameters.txt','w') as f:
             f.write('stack parameters:\n')
@@ -234,7 +245,17 @@ def save_stack(psf, file_pattern,psx,psy,psz,usf,bin_num=None,bin_edges=None,dow
             fp.mkdir(exist_ok=True) #make output directory if not there
         
         #save psf to file
-        tifffile.imwrite(location + "/psf_av.tif",eight_bit_as(psf,np.uint8),photometric='minisblack')
+        tifffile.imwrite(location + "/psf_av.tif", 
+                        eight_bit_as(psf,np.uint8),
+                        photometric='minisblack',
+                        imagej=True,
+                        resolution=(usf/(psy*0.001),usf/(psx*0.001)),
+                        metadata={
+                           'spacing': (psz*0.001)/usf,
+                           'unit': 'um',
+                           'axes': 'ZYX'
+                                   }
+                        )
         
         #save meta data
         with open(location + '/parameters.txt','w') as f:
@@ -254,7 +275,6 @@ def save_stack(psf, file_pattern,psx,psy,psz,usf,bin_num=None,bin_edges=None,dow
     if bin_num == None: print("Succesfully saved PSF and parameters to file.")
     else: print("Succesfully saved PSF and parameters of Bin #"+ str(bin_num) + " to file.")
     return
-
 def get_mip(stack, normalize=True, log=False, clip_pct=0, axis=0):
     """Compute the maximum intensity projection along the given axis.
 
