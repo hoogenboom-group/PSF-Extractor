@@ -379,7 +379,7 @@ def plot_psf(psf, psx, psy, psz, usf):
     fwhm_err = std_err_y[1]
     ax_y.annotate('', xy=(x0-fwhm/2-0.5, y0), xytext=(x0-fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
     ax_y.annotate('', xy=(x0+fwhm/2+0.5, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
-    ax_y.text(x0, popt_z[3], f'{1e3*fwhm:.0f} ({1e3*fwhm_err:.0f}) nm', ha='center')
+    ax_y.text(x0, popt_y[3], f'{1e3*fwhm:.0f} ({1e3*fwhm_err:.0f}) nm', ha='center')
     # X
     x0 = popt_x[0]
     y0 = 0.65*(popt_x[2] + popt_x[3])
@@ -387,7 +387,7 @@ def plot_psf(psf, psx, psy, psz, usf):
     fwhm_err = std_err_x[1]
     ax_x.annotate('', xy=(x0-fwhm/2-0.5, y0), xytext=(x0-fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
     ax_x.annotate('', xy=(x0+fwhm/2+0.5, y0), xytext=(x0+fwhm/2, y0), arrowprops={'arrowstyle': '<|-'})
-    ax_x.text(x0, popt_z[3], f'{1e3*fwhm:.0f} ({1e3*fwhm_err:.0f}) nm', ha='center')
+    ax_x.text(x0, popt_x[3], f'{1e3*fwhm:.0f} ({1e3*fwhm_err:.0f}) nm', ha='center')
 
     # 1D Axes
     ax_x.set_xlabel('Distance [μm]')
