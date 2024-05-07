@@ -1,4 +1,4 @@
-import numpy as np
+﻿import numpy as np
 import trackpy
 
 import matplotlib.pyplot as plt
@@ -225,7 +225,7 @@ def plot_overlapping_features(mip, features, overlapping, wx, wy=None):
     ax.set_title(title)
 
 
-def plot_psf(psf, psx, psy, psz, usf):
+def plot_psf(psf, psx, psy, psz, usf, saveplot=False,file_pattern=[],bin_num=None):
     # Create figure and axes
     fig = plt.figure(figsize=(11, 11))
     gs = fig.add_gridspec(9, 9)
@@ -398,6 +398,32 @@ def plot_psf(psf, psx, psy, psz, usf):
     plt.subplots_adjust(hspace=0.5, wspace=0.5)
     plt.tight_layout()
     #plt.show()
+    if saveplot==True:
+        # In case a list of files is provided
+        if isinstance(file_pattern, list): 
+            if bin_num == None: 
+                location = str(Path(file_pattern[0]).parent) + "/_output"
+            else: 
+                location = str(Path(file_pattern[0]).parent) + "/_output" + "/bin_"+str(bin_num)
+        
+        # If a single directory or multipage tiff is provided
+        elif isinstance(file_pattern, str):
+            if file_pattern[-1] == "/" or file_pattern[-1] == "\\": #directory!
+                if bin_num == None: location = file_pattern + '_output'
+                else: 
+                    location = file_pattern + '_output' + "/bin_"+str(bin_num)
+                fp  = Path(location)
+                fp.mkdir(exist_ok=True) #make output directory if not there
+            else:    #file!
+                #extract file_name for output directory
+                file_name = os.path.splitext(os.path.split(file_pattern)[1])[0]
+                if bin_num == None: location = str(Path(file_pattern).parent) + "/"+file_name+"_output"
+                else: 
+                    location = str(Path(file_pattern).parent) + "/"+file_name+"_output" + "/bin_"+str(bin_num)
+                fp  = Path(location)
+                fp.mkdir(exist_ok=True) #make output directory if not there
+        
+        plt.savefig(location+'\PSF_report.png',dpi=300)
 
 
 def plot_psfs(psfs, psx=None, psy=None):
