@@ -1,5 +1,6 @@
 ﻿import numpy as np
 import trackpy
+import os
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
