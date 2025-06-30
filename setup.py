@@ -21,7 +21,8 @@ INSTALL_REQUIRES = [
     'joblib',
     'xarray',
     'mpl_interactions',
-    'ipympl'
+    'ipympl',
+    'cmap'
 ]
 
 if __name__ == '__main__':

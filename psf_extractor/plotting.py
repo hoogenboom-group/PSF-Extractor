@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import trackpy
 import os
 from pathlib import Path
@@ -7,7 +7,9 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_interactions import hyperslicer
+from cmap import Colormap
 import xarray as xr
+
 
 from .extractor import get_mip, get_min_masses
 from .gauss import gaussian_1D, fit_gaussian_1D, guess_gaussian_1D_params
@@ -21,7 +23,8 @@ else:
     from tqdm import tqdm
 
 
-__all__ = ['plot_mip',
+__all__ = ['set_params_indices',
+	   'plot_mip',
            'plot_mass_range',
            'plot_mass_range_interactive',
            'plot_overlapping_features',
@@ -32,7 +35,14 @@ __all__ = ['plot_mip',
 
 
 # No-brainer global variable
-fire = get_Daans_special_cmap()
+# fire = get_Daans_special_cmap()
+fire = Colormap('imagej:fire').to_mpl()
+
+def set_params_indices(controls, setters: dict[str, int]=None, **kwargs):
+    if setters is not None:
+        kwargs.update(setters)
+    for name, idx in kwargs.items():
+        controls.controls[name].children[0].value = idx
 
 
 def plot_mip(mip, dx=None, dy=None, features=None):
@@ -314,9 +324,10 @@ def plot_psf(psf, psx, psy, psz, usf, saveplot=False,file_pattern=[],bin_num=Non
                    extent=[-wz_cropped/2, wz_cropped/2,-wy/2, wy/2])
 
     # set initial values of sliders
-    control1.vbox.children[0].children[0].value=len_psf//2 #use function iso these nasty lines?
-    control2.vbox.children[0].children[0].value=len_psf_y0//2
-    control3.vbox.children[0].children[0].value=len_psf_x0//2
+    # source: https://github.com/mpl-extensions/mpl-interactions/issues/276
+    set_params_indices(control1, setters={"Z (μm)": len_psf//2})
+    set_params_indices(control2, setters={"Y (μm)": len_psf_y0//2})
+    set_params_indices(control3, setters={"X (μm)": len_psf_x0//2})
 
     # --- Set labels, text, axes... ---
     # XY projection
@@ -426,7 +437,6 @@ def plot_psf(psf, psx, psy, psz, usf, saveplot=False,file_pattern=[],bin_num=Non
                 fp.mkdir(exist_ok=True) #make output directory if not there
         
         plt.savefig(location+'\PSF_report.png',dpi=300)
-
 
 def plot_psfs(psfs, psx=None, psy=None):
     """Plot MIPs of extracted PSFs."""
