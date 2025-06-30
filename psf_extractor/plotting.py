@@ -436,7 +436,7 @@ def plot_psf(psf, psx, psy, psz, usf, saveplot=False,file_pattern=[],bin_num=Non
                 fp  = Path(location)
                 fp.mkdir(exist_ok=True) #make output directory if not there
         
-        plt.savefig(location+'\PSF_report.png',dpi=300)
+        plt.savefig(location+'/PSF_report.png',dpi=300)
 
 def plot_psfs(psfs, psx=None, psy=None):
     """Plot MIPs of extracted PSFs."""
