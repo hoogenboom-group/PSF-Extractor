@@ -293,7 +293,8 @@ def plot_psf(psf, psx, psy, psz, usf, saveplot=False,file_pattern=[],bin_num=Non
                            ax=ax_xy,
                            vmin=np.min(x_psf), vmax=np.max(x_psf), 
                            cmap=fire,
-                           extent=[-wy/2, wy/2,-wx/2, wx/2])
+                           extent=[-wy/2, wy/2,-wx/2, wx/2],
+                       	   use_ipywidgets=True)
 
     # XZ slider plot
     coords_psf_y0 = { # define dimensions of array
@@ -307,7 +308,8 @@ def plot_psf(psf, psx, psy, psz, usf, saveplot=False,file_pattern=[],bin_num=Non
                        ax=ax_xz,
                        vmin=np.min(x_psf_y0), vmax=np.max(x_psf_y0), 
                        cmap=fire,
-                       extent=[-wx/2, wx/2,-wz_cropped/2, wz_cropped/2])
+                       extent=[-wx/2, wx/2,-wz_cropped/2, wz_cropped/2],
+                       use_ipywidgets=True)
 
     # YZ slider plot
     coords_psf_x0 = { # define dimensions of array
@@ -321,7 +323,8 @@ def plot_psf(psf, psx, psy, psz, usf, saveplot=False,file_pattern=[],bin_num=Non
                    ax=ax_yz,
                    vmin=np.min(x_psf_x0), vmax=np.max(x_psf_x0), 
                    cmap=fire,
-                   extent=[-wz_cropped/2, wz_cropped/2,-wy/2, wy/2])
+                   extent=[-wz_cropped/2, wz_cropped/2,-wy/2, wy/2],
+                   use_ipywidgets=True)
 
     # set initial values of sliders
     # source: https://github.com/mpl-extensions/mpl-interactions/issues/276
